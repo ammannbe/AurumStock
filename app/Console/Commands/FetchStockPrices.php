@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Enums\Material;
 use App\Models\StockPrice;
 use App\Models\StockPriceHistory;
 use Illuminate\Console\Command;
@@ -21,7 +22,7 @@ class FetchStockPrices extends Command
         $apiKey = config('services.metalpriceapi.key');
 
 
-        $mapping = [1 => 'XAU', 2 => 'XAG', 3 => 'XPT', 4 => 'XPD'];
+        $mapping = Material::symbolMap();
         $symbols = implode(',', $mapping);
 
         $response = Http::withHeaders(array_filter([
