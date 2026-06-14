@@ -41,8 +41,8 @@
 
     <div>
         <label class="block text-sm font-medium text-gray-700">Depository</label>
-        <select name="depository_id" class="mt-1 block max-w-md w-full border-gray-300 rounded-md">
-            <option value="">-- none --</option>
+        <select name="depository_id" class="mt-1 block max-w-md w-full border-gray-300 rounded-md" required>
+            <option>-- Please select --</option>
             @foreach($depositories ?? [] as $id => $name)
                 <option value="{{ $id }}" {{ (old('depository_id', $product->depository_id ?? '') == $id) ? 'selected' : '' }}>{{ $name }}</option>
             @endforeach

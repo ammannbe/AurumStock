@@ -32,7 +32,7 @@ class ProductController extends Controller
             'weight' => 'required|numeric',
             'weight_unit' => 'required|integer',
             'amount' => 'required|integer|min:1',
-            'depository_id' => 'nullable|exists:depositories,id',
+            'depository_id' => 'required|exists:depositories,id',
             'price' => 'nullable|numeric',
             'price_currency' => 'nullable|string|max:8',
             'year' => 'nullable|integer',
