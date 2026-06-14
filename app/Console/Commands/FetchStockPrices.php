@@ -17,15 +17,16 @@ class FetchStockPrices extends Command
     {
         $this->info('Fetching metal prices using configured provider (MetalpriceAPI expected).');
 
-        $apiUrl = config('services.metalpriceapi.url', env('METALPRICE_API_URL', 'https://api.metalpriceapi.com/v1/latest'));
-        $apiKey = config('services.metalpriceapi.key', env('METALPRICE_API_KEY'));
+        $baseUrl = config('services.metalpriceapi.base_url', 'https://api.metalpriceapi.com/v1/latest');
+        $apiKey = config('services.metalpriceapi.key');
+
 
         $mapping = [1 => 'XAU', 2 => 'XAG', 3 => 'XPT', 4 => 'XPD'];
         $symbols = implode(',', $mapping);
 
         $response = Http::withHeaders(array_filter([
             'Authorization' => $apiKey ? "Bearer {$apiKey}" : null,
-        ]))->get($apiUrl, [
+        ]))->get($baseUrl, [
             'base' => 'USD',
             'symbols' => $symbols,
             'api_key' => $apiKey,

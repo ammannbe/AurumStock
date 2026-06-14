@@ -35,4 +35,14 @@ return [
         ],
     ],
 
+    'exchangerate' => [
+        'base_url' => env('EXCHANGE_RATE_BASE_URL', 'https://v6.exchangerate-api.com/v6'),
+        'key' => env('EXCHANGE_RATE_API_KEY'),
+    ],
+
+    'metalpriceapi' => [
+        'base_url' => env('EXCHANGE_RATE_BASE_URL', 'https://api.metalpriceapi.com/v1/latest'),
+        'key' => env('EXCHANGE_RATE_API_KEY'),
+    ],
+
 ];
