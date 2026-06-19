@@ -3,7 +3,10 @@
 namespace App\Providers;
 
 use App\Console\Kernel;
+use Filament\Support\Assets\Css;
 use Illuminate\Support\ServiceProvider;
+use Filament\Support\Facades\FilamentAsset;
+use Filament\Support\Assets\Js;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -24,6 +27,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        // Register product preview JS for Filament
+        FilamentAsset::register([
+            Js::make('product-previews')->package('app'),
+            Css::make('overlay')->package('app'),
+        ]);
     }
 }

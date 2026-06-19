@@ -33,6 +33,7 @@ Use DDEV commands only:
 ddev artisan
 ddev composer
 ddev npm
+ddev <custom command>
 ````
 
 After code changes, run:
