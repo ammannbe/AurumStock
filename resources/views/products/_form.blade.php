@@ -103,11 +103,7 @@
             <div class="mt-2">
                 <div class="flex items-start gap-4">
                     <img src="{{ asset('storage/' . $product->front_image_path) }}" alt="Front image" class="max-w-xs border rounded">
-                    <form action="{{ route('products.front_image.destroy', ['product' => $product]) }}" method="POST" onsubmit="return confirm('Remove front image?')">
-                        @csrf
-                        @method('DELETE')
-                        <button class="inline-flex items-center px-3 py-1 bg-red-600 text-white rounded">Remove front image</button>
-                    </form>
+                    <button type="button" class="inline-flex items-center px-3 py-1 bg-red-600 text-white rounded" onclick="event.preventDefault(); if(!confirm('Remove front image?')) return; fetch('{{ route('products.front_image.destroy', ['product' => $product]) }}', { method: 'DELETE', credentials: 'same-origin', headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' } }).then(r => { if (r.ok) location.reload(); else r.json().then(j=>alert(j.message||'Failed to remove front image')).catch(()=>alert('Failed to remove front image')); }).catch(() => alert('Failed to remove front image'));">Remove front image</button>
                 </div>
             </div>
         @endif
@@ -121,11 +117,7 @@
             <div class="mt-2">
                 <div class="flex items-start gap-4">
                     <img src="{{ asset('storage/' . $product->back_image_path) }}" alt="Back image" class="max-w-xs border rounded">
-                    <form action="{{ route('products.back_image.destroy', ['product' => $product]) }}" method="POST" onsubmit="return confirm('Remove back image?')">
-                        @csrf
-                        @method('DELETE')
-                        <button class="inline-flex items-center px-3 py-1 bg-red-600 text-white rounded">Remove back image</button>
-                    </form>
+                    <button type="button" class="inline-flex items-center px-3 py-1 bg-red-600 text-white rounded" onclick="event.preventDefault(); if(!confirm('Remove back image?')) return; fetch('{{ route('products.back_image.destroy', ['product' => $product]) }}', { method: 'DELETE', credentials: 'same-origin', headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' } }).then(r => { if (r.ok) location.reload(); else r.json().then(j=>alert(j.message||'Failed to remove back image')).catch(()=>alert('Failed to remove back image')); }).catch(() => alert('Failed to remove back image'));">Remove back image</button>
                 </div>
             </div>
         @endif
@@ -155,11 +147,7 @@
                             @endif
                         </div>
                         <div>
-                            <form action="{{ route('products.assets.destroy', ['product' => $product, 'index' => $i]) }}" method="POST" onsubmit="return confirm('Remove asset?')">
-                                @csrf
-                                @method('DELETE')
-                                <button class="inline-flex items-center px-2 py-1 text-sm bg-red-600 text-white rounded">Remove</button>
-                            </form>
+                            <button type="button" class="inline-flex items-center px-2 py-1 text-sm bg-red-600 text-white rounded" onclick="event.preventDefault(); if(!confirm('Remove asset?')) return; fetch('{{ route('products.assets.destroy', ['product' => $product, 'index' => $i]) }}', { method: 'DELETE', credentials: 'same-origin', headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' } }).then(r => { if (r.ok) location.reload(); else r.json().then(j=>alert(j.message||'Failed to remove asset')).catch(()=>alert('Failed to remove asset')); }).catch(() => alert('Failed to remove asset'));">Remove</button>
                         </div>
                     </li>
                 @endforeach

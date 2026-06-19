@@ -4,20 +4,14 @@ use App\Http\Controllers\DepositoryController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProductExportController;
 use App\Http\Controllers\ProfileController;
-use App\Models\Exchange;
-use App\Models\StockPrice;
+use App\Http\Controllers\DashboardController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get('/dashboard', function () {
-    $stockPrices = StockPrice::orderBy('fetched_at', 'desc')->limit(5)->get();
-    $exchanges = Exchange::orderBy('fetched_at', 'desc')->limit(5)->get();
-
-    return view('dashboard', compact('stockPrices', 'exchanges'));
-})->middleware(['auth', 'verified'])->name('dashboard');
+Route::get('/dashboard', [DashboardController::class, 'index'])->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

@@ -203,23 +203,29 @@ class ProductController extends Controller
         return $normalized;
     }
 
-    public function destroyFrontImage(Product $product)
+    public function destroyFrontImage(Request $request, Product $product)
     {
         abort_unless($product->user_id === auth()->id(), 403);
         if ($product->front_image_path) {
             Storage::disk('public')->delete($product->front_image_path);
             $product->update(['front_image_path' => null]);
         }
+        if ($request->wantsJson() || $request->ajax() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
+            return response()->json(['success' => true]);
+        }
 
         return redirect()->back()->with('success', 'Front image removed.');
     }
 
-    public function destroyBackImage(Product $product)
+    public function destroyBackImage(Request $request, Product $product)
     {
         abort_unless($product->user_id === auth()->id(), 403);
         if ($product->back_image_path) {
             Storage::disk('public')->delete($product->back_image_path);
             $product->update(['back_image_path' => null]);
+        }
+        if ($request->wantsJson() || $request->ajax() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
+            return response()->json(['success' => true]);
         }
 
         return redirect()->back()->with('success', 'Back image removed.');
