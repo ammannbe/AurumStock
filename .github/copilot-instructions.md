@@ -16,11 +16,11 @@ The app manages:
 
 ## Tech Stack
 
-- Laravel
+- Laravel v13
 - DDEV
 - MariaDB
-- Filament
-- Laravel Livewire
+- Filament v5
+- Laravel Livewire v4
 - Pest
 - Laravel Pint
 - Larastan
@@ -54,7 +54,6 @@ ddev composer phpstan
 * Use Pest for tests.
 * Use factories for test data.
 * Use Filament for main CRUD interfaces.
-* Use Livewire only where interactive UI behavior is needed.
 * Only authenticated users can access the app.
 
 ## Application Rules

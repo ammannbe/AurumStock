@@ -12,6 +12,9 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 
@@ -39,6 +42,11 @@ class DepositoryResource extends Resource
         return $table->columns([
             TextColumn::make('name')->searchable(),
             TextColumn::make('description')->limit(50),
+        ])->actions([
+            EditAction::make()->color('secondary'),
+            DeleteAction::make(),
+        ])->bulkActions([
+            DeleteBulkAction::make(),
         ])->defaultSort('name');
     }
 

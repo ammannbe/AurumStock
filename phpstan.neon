@@ -1,0 +1,22 @@
+includes:
+    - ./vendor/larastan/larastan/extension.neon
+
+parameters:
+    paths:
+        - app
+        - bootstrap/app.php
+        - database
+        - public/index.php
+        - resources
+        - routes
+        - tests
+
+    # The level 9 is the highest level
+    level: 7
+
+    excludePaths:
+
+    universalObjectCratesClasses:
+        - ArrayObject
+
+    ignoreErrors:
