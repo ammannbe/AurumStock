@@ -18,7 +18,7 @@ class FetchStockPrices extends Command
     {
         $this->info('Fetching metal prices using configured provider (MetalpriceAPI expected).');
 
-        $baseUrl = config('services.metalpriceapi.base_url', 'https://api.metalpriceapi.com/v1/latest');
+        $baseUrl = config('services.metalpriceapi.base_url');
         $apiKey = config('services.metalpriceapi.key');
 
         $mapping = Material::symbolMap();
@@ -41,18 +41,10 @@ class FetchStockPrices extends Command
         $data = $response->json();
 
         foreach ($mapping as $mat => $symbol) {
-            // try to extract price; support common shapes
-            $price = null;
-            $unit = null;
-
-            if (isset($data['rates'][$symbol])) {
-                $price = $data['rates'][$symbol];
-            } elseif (isset($data[$symbol])) {
-                $price = $data[$symbol];
-            } elseif (isset($data['data'][$symbol]['price'])) {
-                $price = $data['data'][$symbol]['price'];
-                $unit = $data['data'][$symbol]['unit'] ?? null;
-            }
+            $rateKey = 'USD'.$symbol;
+            $price = isset($data['rates'][$rateKey])
+                ? $data['rates'][$rateKey]
+                : null;
 
             if ($price === null) {
                 $this->warn("No price for {$symbol}; skipping.");
@@ -60,14 +52,8 @@ class FetchStockPrices extends Command
                 continue;
             }
 
-            // If unit indicates per troy ounce, convert to per gram
-            $pricePerGram = (float) $price;
-            if ($unit && str_contains(strtolower($unit), 'troy')) {
-                $pricePerGram = $pricePerGram / 31.1034768;
-            } else {
-                // assume provider returns per troy ounce by default (MetalpriceAPI often returns oz)
-                $pricePerGram = $pricePerGram / 31.1034768;
-            }
+            // assume provider returns per troy ounce by default (MetalpriceAPI often returns oz)
+            $pricePerGram = $price / 31.1034768;
 
             $stock = StockPrice::updateOrCreate(
                 ['material' => $mat],

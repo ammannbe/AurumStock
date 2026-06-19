@@ -41,8 +41,8 @@ return [
     ],
 
     'metalpriceapi' => [
-        'base_url' => env('EXCHANGE_RATE_BASE_URL', 'https://api.metalpriceapi.com/v1/latest'),
-        'key' => env('EXCHANGE_RATE_API_KEY'),
+        'base_url' => env('METALPRICE_BASE_URL', 'https://api.metalpriceapi.com/v1/latest'),
+        'key' => env('METALPRICE_API_KEY'),
     ],
 
 ];
