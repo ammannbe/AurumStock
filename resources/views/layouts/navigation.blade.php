@@ -16,8 +16,8 @@
                         {{ __('Dashboard') }}
                     </x-nav-link>
                     @auth
-                        <x-nav-link :href="route('products.index')" :active="request()->routeIs('products.*')">{{ __('Products') }}</x-nav-link>
-                        <x-nav-link :href="route('depositories.index')" :active="request()->routeIs('depositories.*')">{{ __('Depositories') }}</x-nav-link>
+                        <x-nav-link :href="url('/app/products')" :active="request()->is('app*')">{{ __('Products') }}</x-nav-link>
+                        <x-nav-link :href="url('/app/depositories')" :active="request()->is('app*')">{{ __('Depositories') }}</x-nav-link>
                     @endauth
                 </div>
             </div>
@@ -75,7 +75,7 @@
                 {{ __('Dashboard') }}
             </x-responsive-nav-link>
             @auth
-                <x-responsive-nav-link :href="route('products.index')" :active="request()->routeIs('products.*')">{{ __('Products') }}</x-responsive-nav-link>
+                <x-responsive-nav-link :href="url('/app/products')" :active="request()->is('app*')">{{ __('Products') }}</x-responsive-nav-link>
             @endauth
         </div>
 

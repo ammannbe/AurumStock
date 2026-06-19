@@ -5,10 +5,12 @@ namespace App\Filament\Resources;
 use App\Enums\Material;
 use App\Enums\ProductType;
 use App\Enums\WeightUnit;
+use App\Filament\Resources\ProductResource\Pages\CreateProduct;
+use App\Filament\Resources\ProductResource\Pages\EditProduct;
+use App\Filament\Resources\ProductResource\Pages\ListProducts;
 use App\Models\Depository;
 use App\Models\Product;
 use BackedEnum;
-use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -24,37 +26,39 @@ class ProductResource extends Resource
 {
     protected static ?string $model = Product::class;
 
-    protected static string|BackedEnum|null $navigationIcon = null;
+    protected static BackedEnum|string|null $navigationIcon = 'heroicon-o-cube';
+
+    protected static ?string $navigationLabel = 'Products';
+
+    protected static \UnitEnum|string|null $navigationGroup = 'Management';
 
     public static function form(Schema $schema): Schema
     {
         return $schema->schema([
             Hidden::make('user_id')->default(fn () => auth()->id()),
-            Grid::make(2)->schema([
-                TextInput::make('name')->required()->maxLength(255),
-                Select::make('depository_id')
-                    ->label('Depository')
-                    ->options(fn () => Depository::where('user_id', auth()->id())->pluck('name', 'id'))
-                    ->searchable()
-                    ->required(),
-                Select::make('type')
-                    ->options(collect(ProductType::cases())->mapWithKeys(fn ($c) => [$c->value => $c->name])->toArray())
-                    ->required(),
-                Select::make('material')
-                    ->options(collect(Material::cases())->mapWithKeys(fn ($c) => [$c->value => $c->name])->toArray())
-                    ->required(),
-                TextInput::make('weight')->numeric()->required(),
-                Select::make('weight_unit')
-                    ->options(collect(WeightUnit::cases())->mapWithKeys(fn ($c) => [$c->value => $c->name])->toArray())
-                    ->required(),
-                TextInput::make('amount')->numeric()->default(1)->required(),
-                TextInput::make('price')->numeric()->nullable(),
-                TextInput::make('price_currency')->maxLength(3)->nullable(),
-                TextInput::make('year')->numeric()->nullable(),
-                TextInput::make('reference_number')->nullable(),
-                TextInput::make('size')->nullable(),
-                Textarea::make('notes')->nullable(),
-            ]),
+            TextInput::make('name')->required()->maxLength(255),
+            Select::make('depository_id')
+                ->label('Depository')
+                ->options(fn () => Depository::where('user_id', auth()->id())->pluck('name', 'id'))
+                ->searchable()
+                ->required(),
+            Select::make('type')
+                ->options(collect(ProductType::cases())->mapWithKeys(fn ($c) => [$c->value => $c->name])->toArray())
+                ->required(),
+            Select::make('material')
+                ->options(collect(Material::cases())->mapWithKeys(fn ($c) => [$c->value => $c->name])->toArray())
+                ->required(),
+            TextInput::make('weight')->numeric()->required(),
+            Select::make('weight_unit')
+                ->options(collect(WeightUnit::cases())->mapWithKeys(fn ($c) => [$c->value => $c->name])->toArray())
+                ->required(),
+            TextInput::make('amount')->numeric()->default(1)->required(),
+            TextInput::make('price')->numeric()->nullable(),
+            TextInput::make('price_currency')->maxLength(3)->nullable(),
+            TextInput::make('year')->numeric()->nullable(),
+            TextInput::make('reference_number')->nullable(),
+            TextInput::make('size')->nullable(),
+            Textarea::make('notes')->nullable(),
         ]);
     }
 
@@ -82,5 +86,14 @@ class ProductResource extends Resource
     public static function getModelLabel(): string
     {
         return 'Product';
+    }
+
+    public static function getPages(): array
+    {
+        return [
+            'index' => ListProducts::route('/'),
+            'create' => CreateProduct::route('/create'),
+            'edit' => EditProduct::route('/{record}/edit'),
+        ];
     }
 }

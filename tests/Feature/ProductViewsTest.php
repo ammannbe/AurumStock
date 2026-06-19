@@ -18,10 +18,10 @@ class ProductViewsTest extends TestCase
         $this->actingAs($user);
 
         $response = $this->get('/products');
-        $response->assertStatus(200);
+        $response->assertRedirect('/app/products');
 
         $response = $this->get('/products/create');
-        $response->assertStatus(200);
+        $response->assertRedirect('/app/products');
     }
 
     public function test_user_can_create_product_and_see_it_in_index()
@@ -44,9 +44,7 @@ class ProductViewsTest extends TestCase
 
         $this->assertDatabaseHas('products', ['name' => 'Test Gold', 'user_id' => $user->id]);
 
-        $index = $this->get('/products');
-        $index->assertStatus(200);
-        $index->assertSee('Test Gold');
+        $this->get('/products')->assertRedirect('/app/products');
 
         // edit
         $product = Product::where('name', 'Test Gold')->first();

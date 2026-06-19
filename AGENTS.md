@@ -40,6 +40,7 @@ After code changes, run:
 ```bash
 ddev artisan test
 ddev composer pint
+ddev composer phpstan
 ```
 
 ## General Rules

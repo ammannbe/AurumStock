@@ -13,6 +13,12 @@ class ExchangeResource extends Resource
 {
     protected static ?string $model = Exchange::class;
 
+    protected static \BackedEnum|string|null $navigationIcon = 'heroicon-o-sparkles';
+
+    protected static ?string $navigationLabel = 'Exchanges';
+
+    protected static \UnitEnum|string|null $navigationGroup = 'Management';
+
     public static function form(Schema $schema): Schema
     {
         return $schema->schema([

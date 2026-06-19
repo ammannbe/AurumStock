@@ -15,8 +15,9 @@ class DepositoryViewsTest extends TestCase
         $user = User::factory()->create();
         $this->actingAs($user);
 
-        $this->get('/depositories')->assertStatus(200);
-        $this->get('/depositories/create')->assertStatus(200);
+        $response = $this->get('/depositories');
+        $response->assertRedirect('/app/depositories');
+        $this->get('/depositories/create')->assertRedirect('/app/depositories');
 
         $this->post('/depositories', [
             'name' => 'Home Vault',

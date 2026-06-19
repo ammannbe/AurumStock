@@ -15,6 +15,12 @@ class StockPriceResource extends Resource
 {
     protected static ?string $model = StockPrice::class;
 
+    protected static \BackedEnum|string|null $navigationIcon = 'heroicon-o-trending-up';
+
+    protected static ?string $navigationLabel = 'Stock Prices';
+
+    protected static \UnitEnum|string|null $navigationGroup = 'Management';
+
     public static function form(Schema $schema): Schema
     {
         return $schema->schema([

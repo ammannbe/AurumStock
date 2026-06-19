@@ -17,6 +17,12 @@ class DepositoryShareResource extends Resource
 {
     protected static ?string $model = DepositoryShare::class;
 
+    protected static \BackedEnum|string|null $navigationIcon = 'heroicon-o-user-group';
+
+    protected static ?string $navigationLabel = 'Depository Shares';
+
+    protected static \UnitEnum|string|null $navigationGroup = 'Sharing';
+
     public static function form(Schema $schema): Schema
     {
         return $schema->schema([

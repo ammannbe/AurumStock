@@ -2,6 +2,9 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Resources\DepositoryResource\Pages\CreateDepository;
+use App\Filament\Resources\DepositoryResource\Pages\EditDepository;
+use App\Filament\Resources\DepositoryResource\Pages\ListDepositories;
 use App\Models\Depository;
 use BackedEnum;
 use Filament\Forms\Components\Hidden;
@@ -16,7 +19,11 @@ class DepositoryResource extends Resource
 {
     protected static ?string $model = Depository::class;
 
-    protected static string|BackedEnum|null $navigationIcon = null;
+    protected static BackedEnum|string|null $navigationIcon = 'heroicon-o-home';
+
+    protected static ?string $navigationLabel = 'Depositories';
+
+    protected static \UnitEnum|string|null $navigationGroup = 'Management';
 
     public static function form(Schema $schema): Schema
     {
@@ -33,5 +40,14 @@ class DepositoryResource extends Resource
             TextColumn::make('name')->searchable(),
             TextColumn::make('description')->limit(50),
         ])->defaultSort('name');
+    }
+
+    public static function getPages(): array
+    {
+        return [
+            'index' => ListDepositories::route('/'),
+            'create' => CreateDepository::route('/create'),
+            'edit' => EditDepository::route('/{record}/edit'),
+        ];
     }
 }

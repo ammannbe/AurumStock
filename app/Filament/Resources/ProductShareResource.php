@@ -17,6 +17,12 @@ class ProductShareResource extends Resource
 {
     protected static ?string $model = ProductShare::class;
 
+    protected static \BackedEnum|string|null $navigationIcon = 'heroicon-o-user-group';
+
+    protected static ?string $navigationLabel = 'Product Shares';
+
+    protected static \UnitEnum|string|null $navigationGroup = 'Sharing';
+
     public static function form(Schema $schema): Schema
     {
         return $schema->schema([
