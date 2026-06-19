@@ -17,7 +17,7 @@ class FetchExchangeRates extends Command
         $baseUrl = config('services.exchangerate.base_url', 'https://v6.exchangerate-api.com/v6');
         $apiKey = config('services.exchangerate.key');
 
-        $this->info("Fetching exchange rates based on USD from {$baseUrl}" . ($apiKey ? ' (using configured API key)' : ''));
+        $this->info("Fetching exchange rates based on USD from {$baseUrl}".($apiKey ? ' (using configured API key)' : ''));
 
         // Build request depending on provider conventions.
         // For exchangerate-api (v6) the URL is: /v6/YOUR-API-KEY/latest/USD

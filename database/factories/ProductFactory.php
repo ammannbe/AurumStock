@@ -2,7 +2,9 @@
 
 namespace Database\Factories;
 
+use App\Models\Depository;
 use App\Models\Product;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class ProductFactory extends Factory
@@ -12,8 +14,10 @@ class ProductFactory extends Factory
     public function definition()
     {
         return [
-            'user_id' => null,
-            'depository_id' => null,
+            'user_id' => User::factory(),
+            'depository_id' => function (array $attributes) {
+                return Depository::factory()->create(['user_id' => $attributes['user_id'] ?? null])->id;
+            },
             'name' => $this->faker->word,
             'type' => 1,
             'material' => 1,

@@ -21,7 +21,6 @@ class FetchStockPrices extends Command
         $baseUrl = config('services.metalpriceapi.base_url', 'https://api.metalpriceapi.com/v1/latest');
         $apiKey = config('services.metalpriceapi.key');
 
-
         $mapping = Material::symbolMap();
         $symbols = implode(',', $mapping);
 

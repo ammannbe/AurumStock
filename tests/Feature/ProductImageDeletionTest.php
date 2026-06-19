@@ -2,10 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Models\Depository;
 use App\Models\Product;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -87,12 +87,15 @@ class ProductImageDeletionTest extends TestCase
         $user = User::factory()->create();
         $this->actingAs($user);
 
+        $depository = Depository::factory()->create(['user_id' => $user->id]);
+
         $payload = [
             'name' => 'Test',
             'material' => 1,
             'weight' => 10,
             'weight_unit' => 1,
             'amount' => 1,
+            'depository_id' => $depository->id,
             'notes' => 'Some notes here',
         ];
 

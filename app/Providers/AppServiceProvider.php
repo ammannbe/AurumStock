@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Console\Kernel;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -14,7 +15,7 @@ class AppServiceProvider extends ServiceProvider
         // Ensure the application resolves the console kernel to our App Console Kernel
         $this->app->singleton(
             \Illuminate\Contracts\Console\Kernel::class,
-            \App\Console\Kernel::class
+            Kernel::class
         );
     }
 
