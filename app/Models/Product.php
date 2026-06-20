@@ -21,6 +21,9 @@ class Product extends Model
         'assets' => 'array',
         'certificate' => 'boolean',
         'purchase_date' => 'date',
+        'price' => 'decimal:2',
+        'weight' => 'decimal:3',
+        'mintage' => 'integer',
     ];
 
     public function owner()

@@ -96,3 +96,21 @@
         --color-accent-foreground: var(--color-white);
     }
 }
+
+/* Filament: reduce spacing in table column toggle items */
+@layer components {
+    .fi-ta-col-manager-item {
+        padding-top: 0.125rem; /* 2px */
+        padding-bottom: 0.125rem; /* 2px */
+    }
+
+    .fi-ta-col-manager-label {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem; /* reduce gap between checkbox and label */
+    }
+
+    .fi-ta-col-manager-label .fi-checkbox-input {
+        margin-right: 0.25rem;
+    }
+}

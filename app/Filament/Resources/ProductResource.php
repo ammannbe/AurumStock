@@ -47,6 +47,7 @@ class ProductResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->schema([
+            // Identification / ownership
             Hidden::make('user_id')->default(fn () => auth()->id()),
             TextInput::make('name')->required()->maxLength(255),
             Select::make('depository_id')
@@ -60,32 +61,18 @@ class ProductResource extends Resource
             Select::make('material')
                 ->options(collect(Material::cases())->mapWithKeys(fn ($c) => [$c->value => $c->name])->toArray())
                 ->required(),
-            TextInput::make('weight')->numeric()->required(),
-            Select::make('weight_unit')
-                ->options(collect(WeightUnit::cases())->mapWithKeys(fn ($c) => [$c->value => $c->name])->toArray())
-                ->required(),
-            TextInput::make('amount')->numeric()->default(1)->required(),
-            TextInput::make('price')->numeric()->nullable(),
-            Select::make('price_currency')
-                ->label('Price currency')
-                ->options([
-                    'USD' => 'USD',
-                    'CHF' => 'CHF',
-                    'EUR' => 'EUR',
-                ])
-                ->searchable()
-                ->nullable(),
-            TextInput::make('year')->numeric()->nullable(),
-            TextInput::make('reference_number')->nullable(),
-            TextInput::make('size')->nullable(),
+            TextInput::make('reference_number')->nullable()->label('Reference Number'),
+            TextInput::make('year')->numeric()->nullable()->label('Year'),
+
+            // Images & text
             FileUpload::make('front_image_path')
-                ->label('Front image')
+                ->label('Front Image')
                 ->image()
                 ->directory('products')
                 ->disk('public')
                 ->nullable(),
             FileUpload::make('back_image_path')
-                ->label('Back image')
+                ->label('Back Image')
                 ->image()
                 ->directory('products')
                 ->disk('public')
@@ -98,53 +85,79 @@ class ProductResource extends Resource
                 ->label('Text Back')
                 ->nullable()
                 ->maxLength(255),
+
+            // Physical attributes
+            TextInput::make('weight')->numeric()->required()->minValue(0)->step('0.001'),
+            Select::make('weight_unit')
+                ->options(collect(WeightUnit::cases())->mapWithKeys(fn ($c) => [$c->value => $c->name])->toArray())
+                ->required(),
+            Select::make('fineness')
+                ->label('Fineness')
+                ->options(collect(Fineness::cases())->mapWithKeys(fn ($c) => [$c->value => $c->value])->toArray())
+                ->searchable()
+                ->nullable(),
+            TextInput::make('size')->nullable()->label('Size'),
+            TextInput::make('amount')->numeric()->default(1)->required()->minValue(1),
+            TextInput::make('face_value')->nullable()->label('Face Value'),
+
+            // Provenance / metadata
             Select::make('quality')
-                ->label('Qualität')
+                ->label('Quality')
                 ->options(collect(Quality::cases())->mapWithKeys(fn ($c) => [$c->value => $c->label()])->toArray())
                 ->searchable()
                 ->nullable(),
             Checkbox::make('certificate')
-                ->label('Zertifikat'),
+                ->label('Certificate'),
             Select::make('manufacturer')
-                ->label('Hersteller')
+                ->label('Manufacturer')
                 ->options(collect(Manufacturer::cases())->mapWithKeys(fn ($c) => [$c->value => $c->label()])->toArray())
                 ->searchable()
                 ->nullable(),
             Select::make('country_of_origin')
-                ->label('Herkunftsland')
+                ->label('Country of Origin')
                 ->options([
-                    'CH' => 'Schweiz (CH)',
-                    'DE' => 'Deutschland (DE)',
-                    'AT' => 'Österreich (AT)',
-                    'GB' => 'Vereinigtes Königreich (GB)',
-                    'US' => 'Vereinigte Staaten (US)',
-                    'CA' => 'Kanada (CA)',
-                    'AU' => 'Australien (AU)',
-                    'ZA' => 'Südafrika (ZA)',
-                    'FR' => 'Frankreich (FR)',
-                    'RU' => 'Russland (RU)',
+                    'CH' => 'Switzerland (CH)',
+                    'DE' => 'Germany (DE)',
+                    'AT' => 'Austria (AT)',
+                    'GB' => 'United Kingdom (GB)',
+                    'US' => 'United States (US)',
+                    'CA' => 'Canada (CA)',
+                    'AU' => 'Australia (AU)',
+                    'ZA' => 'South Africa (ZA)',
+                    'FR' => 'France (FR)',
+                    'RU' => 'Russia (RU)',
                     'CN' => 'China (CN)',
-                    'MX' => 'Mexiko (MX)',
+                    'MX' => 'Mexico (MX)',
                 ])
                 ->searchable()
                 ->nullable(),
-            Select::make('fineness')
-                ->label('Feinheit')
-                ->options(collect(Fineness::cases())->mapWithKeys(fn ($c) => [$c->value => $c->value])->toArray())
-                ->searchable()
-                ->nullable(),
             Select::make('packaging')
-                ->label('Verpackung')
+                ->label('Packaging')
                 ->options(collect(Packaging::cases())->mapWithKeys(fn ($c) => [$c->value => $c->label()])->toArray())
                 ->searchable()
                 ->nullable(),
             TextInput::make('mintage')
-                ->label('Auflage')
+                ->label('Mintage')
                 ->numeric()
+                ->nullable()
+                ->minValue(0),
+
+            // Financial
+            TextInput::make('price')->numeric()->nullable()->minValue(0)->step('0.01')->label('Price'),
+            Select::make('price_currency')
+                ->label('Price Currency')
+                ->options([
+                    'USD' => 'USD',
+                    'CHF' => 'CHF',
+                    'EUR' => 'EUR',
+                ])
+                ->searchable()
                 ->nullable(),
             DatePicker::make('purchase_date')
-                ->label('Kaufdatum')
+                ->label('Purchase Date')
                 ->nullable(),
+
+            // Notes
             Textarea::make('notes')->nullable()->columnSpan('full'),
         ]);
     }
@@ -152,7 +165,7 @@ class ProductResource extends Resource
     public static function table(Table $table): Table
     {
         return $table->columns([
-            TextColumn::make('name')->searchable(),
+            TextColumn::make('name')->searchable()->label('Name'),
             TextColumn::make('front_image_preview')
                 ->label('Image')
                 ->html()
@@ -172,57 +185,57 @@ class ProductResource extends Resource
 
                     $imgStyle = 'height:3rem;width:3rem;object-fit:cover;border-radius:0.375rem;cursor:pointer;margin-right:0.5rem';
 
-                    $onHover = '(function(el){ if(el.dataset.back){ el.dataset.orig=el.src; el.src=el.dataset.back; } })(this)';
-                    $onOut = '(function(el){ if(el.dataset.orig){ el.src=el.dataset.orig; } })(this)';
-
-                    $overlayJs = "(function(front, back){\n  var id='__img-overlay';\n  var existing=document.getElementById(id);\n  if(existing){ existing.remove(); return; }\n  var overlay=document.createElement('div');\n  overlay.id=id;\n  overlay.style.position='fixed'; overlay.style.left=0; overlay.style.top=0; overlay.style.right=0; overlay.style.bottom=0; overlay.style.background='rgba(0,0,0,0.75)'; overlay.style.display='flex'; overlay.style.alignItems='center'; overlay.style.justifyContent='center'; overlay.style.zIndex=9999;\n  var container=document.createElement('div'); container.style.position='relative'; container.style.display='flex'; container.style.gap='1rem'; container.style.maxWidth='95%'; container.style.maxHeight='95%'; container.style.padding='1rem'; container.style.alignItems='center';\n  var img1=document.createElement('img'); img1.src=front; img1.style.maxWidth='90vw'; img1.style.maxHeight='90vh'; img1.style.objectFit='contain';\n  container.appendChild(img1);\n  if(back){ var img2=document.createElement('img'); img2.src=back; img2.style.maxWidth='90vw'; img2.style.maxHeight='90vh'; img2.style.objectFit='contain'; container.appendChild(img2); }\n  var btn=document.createElement('button'); btn.innerText='x'; btn.style.position='absolute'; btn.style.top='0.5rem'; btn.style.right='0.5rem'; btn.style.padding='0.5rem 0.75rem'; btn.style.background='white'; btn.onclick=function(){ overlay.remove(); };\n  overlay.appendChild(container); overlay.appendChild(btn); document.body.appendChild(overlay);\n})";
-
-                    // Build the img tag with data-back when available
-                    // Img with data attributes; attach a single initializer script to enable
-                    // hover swap and click overlay without inline event handlers.
                     $dataBackAttr = $back ? " data-back=\"{$backEsc}\"" : '';
                     $dataFrontAttr = $front ? " data-front=\"{$frontEsc}\"" : '';
 
-                    // Prevent default navigation on click (anchor wrapper) but allow event to bubble
-                    // Pack front/back into alt as a fallback if data-* attrs are stripped.
                     $altFallback = $front && $back ? $front.'||'.$back : ($front ?? $back);
                     $altEsc = e($altFallback);
                     $imgHtml = "<img class=\"product-preview\" src=\"{$srcEsc}\" alt=\"{$altEsc}\"{$dataFrontAttr}{$dataBackAttr} style=\"{$imgStyle}\" />";
 
-                    // We rely on the registered public JS `product-previews.js`
-                    // to provide hover and overlay/slider behavior.
                     return $imgHtml;
                 })($record)
                 ),
+
+            BadgeColumn::make('material')->getStateUsing(fn ($record) => Material::from($record->material)->name),
+            TextColumn::make('weight')->label('Weight'),
+            TextColumn::make('amount')->label('Amount'),
+            TextColumn::make('depository.name')->label('Depository')->sortable(),
+            TextColumn::make('price')->label('Price'),
+            TextColumn::make('raw_material_value')->label('Raw Material USD')->getStateUsing(fn ($record) => $record->rawMaterialValueUsd() ? number_format($record->rawMaterialValueUsd(), 2) : '-'),
+            TextColumn::make('year')->label('Year')->sortable(),
+
             TextColumn::make('text_front')->label('Text Front')->limit(30)->toggleable(isToggledHiddenByDefault: true),
             TextColumn::make('text_back')->label('Text Back')->limit(30)->toggleable(isToggledHiddenByDefault: true),
-            BadgeColumn::make('material')->getStateUsing(fn ($record) => Material::from($record->material)->name),
             TextColumn::make('quality')
-                ->label('Qualität')
+                ->label('Quality')
                 ->getStateUsing(fn ($record) => $record->quality ? Quality::from($record->quality)->label() : '-')
                 ->toggleable(isToggledHiddenByDefault: true),
             IconColumn::make('certificate')
-                ->label('Zertifikat')
+                ->label('Certificate')
                 ->boolean()
                 ->toggleable(isToggledHiddenByDefault: true),
             TextColumn::make('manufacturer')
-                ->label('Hersteller')
+                ->label('Manufacturer')
                 ->getStateUsing(fn ($record) => $record->manufacturer ? Manufacturer::from($record->manufacturer)->label() : '-')
                 ->toggleable(isToggledHiddenByDefault: true),
-            TextColumn::make('country_of_origin')->label('Herkunftsland')->toggleable(isToggledHiddenByDefault: true),
-            TextColumn::make('fineness')->label('Feinheit')->toggleable(isToggledHiddenByDefault: true),
+            TextColumn::make('country_of_origin')->label('Country')->toggleable(isToggledHiddenByDefault: true),
+            TextColumn::make('fineness')->label('Fineness')->toggleable(isToggledHiddenByDefault: true),
             TextColumn::make('packaging')
-                ->label('Verpackung')
+                ->label('Packaging')
                 ->getStateUsing(fn ($record) => $record->packaging ? Packaging::from($record->packaging)->label() : '-')
                 ->toggleable(isToggledHiddenByDefault: true),
-            TextColumn::make('mintage')->label('Auflage')->numeric()->toggleable(isToggledHiddenByDefault: true),
-            TextColumn::make('purchase_date')->label('Kaufdatum')->date()->toggleable(isToggledHiddenByDefault: true),
-            TextColumn::make('weight'),
-            TextColumn::make('amount'),
-            TextColumn::make('depository.name')->label('Depository')->sortable(),
-            TextColumn::make('raw_material_value')->label('Raw USD')->getStateUsing(fn ($record) => $record->rawMaterialValueUsd() ? number_format($record->rawMaterialValueUsd(), 2) : '-'),
-            TextColumn::make('price')->label('Price'),
-            TextColumn::make('year')->sortable(),
+            TextColumn::make('mintage')->label('Mintage')->numeric()->toggleable(isToggledHiddenByDefault: true),
+            TextColumn::make('purchase_date')->label('Purchase Date')->date()->toggleable(isToggledHiddenByDefault: true),
+
+            IconColumn::make('notes')
+                ->label('Notes')
+                ->getStateUsing(fn ($record) => (bool) $record->notes)
+                ->boolean()
+                ->trueIcon('heroicon-o-document-text')
+                ->falseIcon('heroicon-o-minus')
+                ->tooltip(fn ($record) => $record->notes ?? '')
+                ->toggleable(isToggledHiddenByDefault: true),
+
         ])->actions([
             EditAction::make()->color('secondary'),
             DeleteAction::make(),
