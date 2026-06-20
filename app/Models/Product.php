@@ -12,7 +12,7 @@ class Product extends Model
     protected $fillable = [
         'user_id', 'depository_id', 'name', 'type', 'material', 'weight', 'weight_unit', 'amount',
         'face_value', 'year', 'reference_number', 'size', 'price', 'price_currency',
-        'front_image_path', 'back_image_path', 'assets', 'notes',
+        'front_image_path', 'back_image_path', 'text_front', 'text_back', 'assets', 'notes',
     ];
 
     protected $casts = [

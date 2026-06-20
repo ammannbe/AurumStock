@@ -4,15 +4,17 @@ namespace App\Filament\Widgets;
 
 use App\Enums\Material;
 use App\Models\StockPrice;
-use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\BadgeColumn;
+use Filament\Tables\Columns\TextColumn;
 use Filament\Widgets\TableWidget;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\Relation;
 
 class StockPricesWidget extends TableWidget
 {
     protected static ?string $heading = 'Stock Prices';
 
-    protected function getTableQuery(): \Illuminate\Database\Eloquent\Builder | \Illuminate\Database\Eloquent\Relations\Relation | null
+    protected function getTableQuery(): Builder|Relation|null
     {
         return StockPrice::query()->limit(10);
     }

@@ -4,9 +4,9 @@ namespace App\Providers;
 
 use App\Console\Kernel;
 use Filament\Support\Assets\Css;
-use Illuminate\Support\ServiceProvider;
-use Filament\Support\Facades\FilamentAsset;
 use Filament\Support\Assets\Js;
+use Filament\Support\Facades\FilamentAsset;
+use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
 {

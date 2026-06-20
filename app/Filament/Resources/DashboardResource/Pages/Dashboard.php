@@ -16,6 +16,7 @@ class Dashboard extends Page
     protected string $view = 'filament.pages.user.dashboard';
 
     public array $stockPrices = [];
+
     public array $exchanges = [];
 
     public function mount(): void
@@ -33,6 +34,7 @@ class Dashboard extends Page
                     return ['exact' => (string) $v, 'human' => '-'];
                 }
             }
+
             return ['exact' => $dt->format('Y-m-d H:i:s'), 'human' => $dt->diffForHumans()];
         };
 

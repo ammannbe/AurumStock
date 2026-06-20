@@ -5,12 +5,14 @@ namespace App\Filament\Widgets;
 use App\Models\Exchange;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Widgets\TableWidget;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\Relation;
 
 class ExchangesWidget extends TableWidget
 {
     protected static ?string $heading = 'Exchange Rates';
 
-    protected function getTableQuery(): \Illuminate\Database\Eloquent\Builder | \Illuminate\Database\Eloquent\Relations\Relation | null
+    protected function getTableQuery(): Builder|Relation|null
     {
         return Exchange::query()->limit(10);
     }
