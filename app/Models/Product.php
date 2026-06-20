@@ -13,10 +13,14 @@ class Product extends Model
         'user_id', 'depository_id', 'name', 'type', 'material', 'weight', 'weight_unit', 'amount',
         'face_value', 'year', 'reference_number', 'size', 'price', 'price_currency',
         'front_image_path', 'back_image_path', 'text_front', 'text_back', 'assets', 'notes',
+        'quality', 'certificate', 'manufacturer', 'country_of_origin', 'fineness',
+        'packaging', 'mintage', 'purchase_date',
     ];
 
     protected $casts = [
         'assets' => 'array',
+        'certificate' => 'boolean',
+        'purchase_date' => 'date',
     ];
 
     public function owner()

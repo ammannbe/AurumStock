@@ -2,8 +2,12 @@
 
 namespace App\Filament\Resources;
 
+use App\Enums\Fineness;
+use App\Enums\Manufacturer;
 use App\Enums\Material;
+use App\Enums\Packaging;
 use App\Enums\ProductType;
+use App\Enums\Quality;
 use App\Enums\WeightUnit;
 use App\Filament\Resources\ProductResource\Pages\CreateProduct;
 use App\Filament\Resources\ProductResource\Pages\EditProduct;
@@ -14,6 +18,8 @@ use BackedEnum;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Forms\Components\Checkbox;
+use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Select;
@@ -22,6 +28,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\BadgeColumn;
+use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -91,7 +98,54 @@ class ProductResource extends Resource
                 ->label('Text Back')
                 ->nullable()
                 ->maxLength(255),
-            Textarea::make('notes')->nullable(),
+            Select::make('quality')
+                ->label('Qualität')
+                ->options(collect(Quality::cases())->mapWithKeys(fn ($c) => [$c->value => $c->label()])->toArray())
+                ->searchable()
+                ->nullable(),
+            Checkbox::make('certificate')
+                ->label('Zertifikat'),
+            Select::make('manufacturer')
+                ->label('Hersteller')
+                ->options(collect(Manufacturer::cases())->mapWithKeys(fn ($c) => [$c->value => $c->label()])->toArray())
+                ->searchable()
+                ->nullable(),
+            Select::make('country_of_origin')
+                ->label('Herkunftsland')
+                ->options([
+                    'CH' => 'Schweiz (CH)',
+                    'DE' => 'Deutschland (DE)',
+                    'AT' => 'Österreich (AT)',
+                    'GB' => 'Vereinigtes Königreich (GB)',
+                    'US' => 'Vereinigte Staaten (US)',
+                    'CA' => 'Kanada (CA)',
+                    'AU' => 'Australien (AU)',
+                    'ZA' => 'Südafrika (ZA)',
+                    'FR' => 'Frankreich (FR)',
+                    'RU' => 'Russland (RU)',
+                    'CN' => 'China (CN)',
+                    'MX' => 'Mexiko (MX)',
+                ])
+                ->searchable()
+                ->nullable(),
+            Select::make('fineness')
+                ->label('Feinheit')
+                ->options(collect(Fineness::cases())->mapWithKeys(fn ($c) => [$c->value => $c->value])->toArray())
+                ->searchable()
+                ->nullable(),
+            Select::make('packaging')
+                ->label('Verpackung')
+                ->options(collect(Packaging::cases())->mapWithKeys(fn ($c) => [$c->value => $c->label()])->toArray())
+                ->searchable()
+                ->nullable(),
+            TextInput::make('mintage')
+                ->label('Auflage')
+                ->numeric()
+                ->nullable(),
+            DatePicker::make('purchase_date')
+                ->label('Kaufdatum')
+                ->nullable(),
+            Textarea::make('notes')->nullable()->columnSpan('full'),
         ]);
     }
 
@@ -140,9 +194,29 @@ class ProductResource extends Resource
                     return $imgHtml;
                 })($record)
                 ),
-            TextColumn::make('text_front')->label('Text Front')->limit(30),
-            TextColumn::make('text_back')->label('Text Back')->limit(30),
+            TextColumn::make('text_front')->label('Text Front')->limit(30)->toggleable(isToggledHiddenByDefault: true),
+            TextColumn::make('text_back')->label('Text Back')->limit(30)->toggleable(isToggledHiddenByDefault: true),
             BadgeColumn::make('material')->getStateUsing(fn ($record) => Material::from($record->material)->name),
+            TextColumn::make('quality')
+                ->label('Qualität')
+                ->getStateUsing(fn ($record) => $record->quality ? Quality::from($record->quality)->label() : '-')
+                ->toggleable(isToggledHiddenByDefault: true),
+            IconColumn::make('certificate')
+                ->label('Zertifikat')
+                ->boolean()
+                ->toggleable(isToggledHiddenByDefault: true),
+            TextColumn::make('manufacturer')
+                ->label('Hersteller')
+                ->getStateUsing(fn ($record) => $record->manufacturer ? Manufacturer::from($record->manufacturer)->label() : '-')
+                ->toggleable(isToggledHiddenByDefault: true),
+            TextColumn::make('country_of_origin')->label('Herkunftsland')->toggleable(isToggledHiddenByDefault: true),
+            TextColumn::make('fineness')->label('Feinheit')->toggleable(isToggledHiddenByDefault: true),
+            TextColumn::make('packaging')
+                ->label('Verpackung')
+                ->getStateUsing(fn ($record) => $record->packaging ? Packaging::from($record->packaging)->label() : '-')
+                ->toggleable(isToggledHiddenByDefault: true),
+            TextColumn::make('mintage')->label('Auflage')->numeric()->toggleable(isToggledHiddenByDefault: true),
+            TextColumn::make('purchase_date')->label('Kaufdatum')->date()->toggleable(isToggledHiddenByDefault: true),
             TextColumn::make('weight'),
             TextColumn::make('amount'),
             TextColumn::make('depository.name')->label('Depository')->sortable(),
