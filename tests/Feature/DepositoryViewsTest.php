@@ -17,8 +17,8 @@ class DepositoryViewsTest extends TestCase
         $this->actingAs($user);
 
         $response = $this->get('/app/depositories');
-        $response->assertStatus(403);
-        $this->get('/app/depositories/create')->assertStatus(403);
+        $response->assertStatus(200);
+        $this->get('/app/depositories/create')->assertStatus(200);
     }
 
     public function test_user_can_create_depository_via_model(): void

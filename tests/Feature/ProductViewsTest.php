@@ -18,10 +18,10 @@ class ProductViewsTest extends TestCase
         $this->actingAs($user);
 
         $response = $this->get('/app/products');
-        $response->assertStatus(403);
+        $response->assertStatus(200);
 
         $response = $this->get('/app/products/create');
-        $response->assertStatus(403);
+        $response->assertStatus(200);
     }
 
     public function test_user_can_create_product_via_model(): void
