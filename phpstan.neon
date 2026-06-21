@@ -12,7 +12,7 @@ parameters:
         - tests
 
     # The level 9 is the highest level
-    level: 5
+    level: 6
 
     excludePaths:
 
@@ -23,6 +23,12 @@ parameters:
         - message: '#Call to an undefined method .*TestCall::#'
           paths:
               - tests/*
-        - message: '#Access to an undefined property .*Model::#'
+        - message: '#does not specify its types: TRelatedModel, TDeclaringModel, TResult#'
           paths:
-              - tests/*
+              - app/Filament/Widgets/*
+        - message: '#return type with generic class.*does not specify its types: TRelatedModel, TDeclaringModel#'
+          paths:
+              - app/Models/*
+        - message: '#uses generic trait.*HasFactory but does not specify its types: TFactory#'
+          paths:
+              - app/Models/*

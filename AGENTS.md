@@ -124,5 +124,6 @@ Report:
 
 * what changed
 * tests result
-* Pint result
+* pint result
+* phpstan result
 * open follow-ups

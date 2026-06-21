@@ -14,6 +14,9 @@ class StockPricesWidget extends TableWidget
 {
     protected static ?string $heading = 'Stock Prices';
 
+    /**
+     * @return Builder<StockPrice>|null
+     */
     protected function getTableQuery(): Builder|Relation|null
     {
         return StockPrice::query()->limit(10);

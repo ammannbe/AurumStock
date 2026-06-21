@@ -12,7 +12,7 @@ class ProductTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_owner_can_create_product()
+    public function test_owner_can_create_product(): void
     {
         $user = User::factory()->create();
         $depot = Depository::factory()->create(['user_id' => $user->id]);

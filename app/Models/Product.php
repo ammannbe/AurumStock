@@ -12,11 +12,13 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $amount
  * @property string|null $front_image_path
  * @property string|null $back_image_path
- * @property array|null $assets
+ * @property array<int,mixed>|null $assets
+ * @method static \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Product> factory(...$parameters)
  * @property-read \App\Models\User $owner
  */
 class Product extends Model
 {
+    /** @use HasFactory<\Database\Factories\ProductFactory> */
     use HasFactory;
 
     protected $fillable = [
@@ -37,17 +39,17 @@ class Product extends Model
         'mintage' => 'integer',
     ];
 
-    public function owner()
+    public function owner(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
     }
 
-    public function depository()
+    public function depository(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(Depository::class);
     }
 
-    public function shares()
+    public function shares(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(ProductShare::class);
     }

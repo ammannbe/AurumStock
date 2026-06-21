@@ -38,7 +38,7 @@ class StockPriceResource extends Resource
         ]);
     }
 
-    public static function afterSave($record)
+    public static function afterSave(StockPrice $record): void
     {
         // create history entry
         StockPriceHistory::create(['stock_price_id' => $record->id, 'price_usd_per_gram' => $record->price_usd_per_gram]);

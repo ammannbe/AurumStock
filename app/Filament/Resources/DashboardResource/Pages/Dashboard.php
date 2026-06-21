@@ -15,8 +15,10 @@ class Dashboard extends Page
 
     protected string $view = 'filament.pages.user.dashboard';
 
+    /** @var array<int, array<string,mixed>> */
     public array $stockPrices = [];
 
+    /** @var array<int, array<string,mixed>> */
     public array $exchanges = [];
 
     public function mount(): void

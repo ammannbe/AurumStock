@@ -12,6 +12,9 @@ class ExchangesWidget extends TableWidget
 {
     protected static ?string $heading = 'Exchange Rates';
 
+    /**
+     * @return Builder<Exchange>|null
+     */
     protected function getTableQuery(): Builder|Relation|null
     {
         return Exchange::query()->limit(10);

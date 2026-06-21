@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Enums\Currency;
 use App\Enums\Fineness;
 use App\Enums\Manufacturer;
 use App\Enums\Material;
@@ -107,7 +108,8 @@ class ProductResource extends Resource
                 ->searchable()
                 ->nullable(),
             Checkbox::make('certificate')
-                ->label('Certificate'),
+                ->label('Certificate')
+                ->inline(false),
             Select::make('manufacturer')
                 ->label('Manufacturer')
                 ->options(collect(Manufacturer::cases())->mapWithKeys(fn ($c) => [$c->value => $c->label()])->toArray())
@@ -133,7 +135,7 @@ class ProductResource extends Resource
                 ->nullable(),
             Select::make('packaging')
                 ->label('Packaging')
-                ->options(collect(Packaging::cases())->mapWithKeys(fn ($c) => [$c->value => $c->label()])->toArray())
+                ->options(Packaging::toArray())
                 ->searchable()
                 ->nullable(),
             TextInput::make('mintage')
@@ -143,14 +145,15 @@ class ProductResource extends Resource
                 ->minValue(0),
 
             // Financial
-            TextInput::make('price')->numeric()->nullable()->minValue(0)->step('0.01')->label('Price'),
+            TextInput::make('price')
+                ->numeric()
+                ->nullable()
+                ->minValue(0)
+                ->step('0.01')
+                ->label('Purchase Price'),
             Select::make('price_currency')
-                ->label('Price Currency')
-                ->options([
-                    'USD' => 'USD',
-                    'CHF' => 'CHF',
-                    'EUR' => 'EUR',
-                ])
+                ->label('Purchase Price Currency')
+                ->options(Currency::toArray())
                 ->searchable()
                 ->nullable(),
             DatePicker::make('purchase_date')

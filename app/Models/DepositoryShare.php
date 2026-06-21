@@ -9,11 +9,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 /**
  * @property-read \App\Models\Depository $depository
  */
+/**
+ * @method static \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\DepositoryShare> factory(...$parameters)
+ */
 class DepositoryShare extends Model
 {
     use HasFactory;
-
-    protected $fillable = ['depository_id', 'owner_user_id', 'shared_with_user_id', 'permission'];
 
     public function depository(): BelongsTo
     {

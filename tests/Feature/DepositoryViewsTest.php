@@ -10,7 +10,7 @@ class DepositoryViewsTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_authenticated_user_can_manage_depositories()
+    public function test_authenticated_user_can_manage_depositories(): void
     {
         $user = User::factory()->create();
         $this->actingAs($user);

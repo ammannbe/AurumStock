@@ -13,7 +13,7 @@ class ProductImageDeletionTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_front_image_delete_removes_image_not_product()
+    public function test_front_image_delete_removes_image_not_product(): void
     {
         Storage::fake('public');
 
@@ -35,7 +35,7 @@ class ProductImageDeletionTest extends TestCase
         Storage::disk('public')->assertMissing($path);
     }
 
-    public function test_back_image_delete_removes_image_not_product()
+    public function test_back_image_delete_removes_image_not_product(): void
     {
         Storage::fake('public');
 
@@ -57,7 +57,7 @@ class ProductImageDeletionTest extends TestCase
         Storage::disk('public')->assertMissing($path);
     }
 
-    public function test_destroy_asset_only_removes_asset_and_file()
+    public function test_destroy_asset_only_removes_asset_and_file(): void
     {
         Storage::fake('public');
 
@@ -85,7 +85,7 @@ class ProductImageDeletionTest extends TestCase
         Storage::disk('public')->assertExists($path2);
     }
 
-    public function test_notes_are_stored_on_create()
+    public function test_notes_are_stored_on_create(): void
     {
         $user = User::factory()->create();
         $this->actingAs($user);

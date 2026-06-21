@@ -12,7 +12,7 @@ class ProductViewsTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_authenticated_user_can_view_products_index_and_create()
+    public function test_authenticated_user_can_view_products_index_and_create(): void
     {
         $user = User::factory()->create();
         $this->actingAs($user);
@@ -24,7 +24,7 @@ class ProductViewsTest extends TestCase
         $response->assertRedirect('/app/products');
     }
 
-    public function test_user_can_create_product_and_see_it_in_index()
+    public function test_user_can_create_product_and_see_it_in_index(): void
     {
         $user = User::factory()->create();
         $this->actingAs($user);

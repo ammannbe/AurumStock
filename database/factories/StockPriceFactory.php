@@ -5,6 +5,9 @@ namespace Database\Factories;
 use App\Models\StockPrice;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
+/**
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\StockPrice>
+ */
 class StockPriceFactory extends Factory
 {
     protected $model = StockPrice::class;
