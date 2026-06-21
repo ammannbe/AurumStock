@@ -27,6 +27,7 @@ class StockPricesWidget extends TableWidget
         return [
             BadgeColumn::make('material')->getStateUsing(function ($record) {
                 $material = Material::tryFrom($record->material);
+
                 return $record->material ? ($material !== null ? $material->name : $record->material) : '-';
             }),
             TextColumn::make('price_usd_per_gram')->label('USD / g')->getStateUsing(fn ($record) => number_format($record->price_usd_per_gram, 2)),

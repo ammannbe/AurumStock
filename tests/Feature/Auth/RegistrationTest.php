@@ -1,7 +1,8 @@
 <?php
 
-/** @var \Tests\TestCase $this */
+use Tests\TestCase;
 
+/** @var TestCase $this */
 test('registration screen can be rendered', function () {
     $response = $this->get('/register');
 

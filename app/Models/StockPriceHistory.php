@@ -9,7 +9,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 /**
  * @method static \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\StockPriceHistory> factory(...$parameters)
  */
-
 class StockPriceHistory extends Model
 {
     use HasFactory;

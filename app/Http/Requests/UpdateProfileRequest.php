@@ -21,6 +21,4 @@ class UpdateProfileRequest extends FormRequest
             'notes' => ['nullable', 'string'],
         ];
     }
-
-
 }

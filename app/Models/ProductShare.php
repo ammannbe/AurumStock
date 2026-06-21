@@ -7,8 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * @property-read \App\Models\Product $product
- * @property-read \App\Models\User $sharedWith
+ * @property-read Product $product
+ * @property-read User $sharedWith
  */
 class ProductShare extends Model
 {

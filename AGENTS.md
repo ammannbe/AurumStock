@@ -39,7 +39,7 @@ ddev <custom command>
 After code changes, run:
 
 ```bash
-ddev artisan test
+ddev composer test
 ddev composer pint
 ddev composer phpstan
 ```

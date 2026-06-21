@@ -1,8 +1,9 @@
 <?php
 
-/** @var \Tests\TestCase $this */
+/** @var TestCase $this */
 
 use App\Models\User;
+use Tests\TestCase;
 
 test('confirm password screen can be rendered', function () {
     $user = User::factory()->create();

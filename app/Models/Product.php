@@ -2,8 +2,11 @@
 
 namespace App\Models;
 
+use Database\Factories\ProductFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * @property int $id
@@ -13,12 +16,14 @@ use Illuminate\Database\Eloquent\Model;
  * @property string|null $front_image_path
  * @property string|null $back_image_path
  * @property array<int,mixed>|null $assets
+ *
  * @method static \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Product> factory(...$parameters)
- * @property-read \App\Models\User $owner
+ *
+ * @property-read User $owner
  */
 class Product extends Model
 {
-    /** @use HasFactory<\Database\Factories\ProductFactory> */
+    /** @use HasFactory<ProductFactory> */
     use HasFactory;
 
     protected $fillable = [
@@ -39,17 +44,17 @@ class Product extends Model
         'mintage' => 'integer',
     ];
 
-    public function owner(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    public function owner(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
     }
 
-    public function depository(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    public function depository(): BelongsTo
     {
         return $this->belongsTo(Depository::class);
     }
 
-    public function shares(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function shares(): HasMany
     {
         return $this->hasMany(ProductShare::class);
     }

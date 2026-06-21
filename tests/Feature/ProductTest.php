@@ -19,7 +19,7 @@ class ProductTest extends TestCase
 
         $this->actingAs($user);
 
-        /** @var \App\Models\Product $product */
+        /** @var Product $product */
         $product = Product::factory()->create([
             'user_id' => $user->id,
             'depository_id' => $depot->id,

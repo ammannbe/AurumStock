@@ -1,8 +1,9 @@
 <?php
 
-/** @var \Tests\TestCase $this */
+/** @var TestCase $this */
 
 use App\Models\User;
+use Tests\TestCase;
 
 test('profile page is displayed', function () {
     $user = User::factory()->create();

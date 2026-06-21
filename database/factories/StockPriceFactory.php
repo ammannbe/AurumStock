@@ -6,7 +6,7 @@ use App\Models\StockPrice;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\StockPrice>
+ * @extends Factory<StockPrice>
  */
 class StockPriceFactory extends Factory
 {

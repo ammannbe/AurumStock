@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * @property-read \App\Models\Depository $depository
+ * @property-read Depository $depository
  */
 /**
  * @method static \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\DepositoryShare> factory(...$parameters)

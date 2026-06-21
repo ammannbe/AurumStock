@@ -1,9 +1,10 @@
 <?php
 
-/** @var \Tests\TestCase $this */
+/** @var TestCase $this */
 
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
+use Tests\TestCase;
 
 test('password can be updated', function () {
     $user = User::factory()->create();

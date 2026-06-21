@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Database\Factories\DepositoryFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -12,7 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 class Depository extends Model
 {
-    /** @use HasFactory<\Database\Factories\DepositoryFactory> */
+    /** @use HasFactory<DepositoryFactory> */
     use HasFactory;
 
     protected $fillable = ['user_id', 'name', 'description'];

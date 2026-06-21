@@ -20,7 +20,7 @@ class ProductImageDeletionTest extends TestCase
         $user = User::factory()->create();
         $this->actingAs($user);
 
-        /** @var \App\Models\Product $product */
+        /** @var Product $product */
         $product = Product::factory()->create(['user_id' => $user->id]);
 
         $path = "products/{$product->id}/front.jpg";
@@ -42,7 +42,7 @@ class ProductImageDeletionTest extends TestCase
         $user = User::factory()->create();
         $this->actingAs($user);
 
-        /** @var \App\Models\Product $product */
+        /** @var Product $product */
         $product = Product::factory()->create(['user_id' => $user->id]);
 
         $path = "products/{$product->id}/back.png";
@@ -64,7 +64,7 @@ class ProductImageDeletionTest extends TestCase
         $user = User::factory()->create();
         $this->actingAs($user);
 
-        /** @var \App\Models\Product $product */
+        /** @var Product $product */
         $product = Product::factory()->create(['user_id' => $user->id]);
 
         // legacy string asset and structured asset
