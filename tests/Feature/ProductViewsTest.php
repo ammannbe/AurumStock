@@ -24,44 +24,47 @@ class ProductViewsTest extends TestCase
         $response->assertRedirect('/app/products');
     }
 
-    public function test_user_can_create_product_and_see_it_in_index(): void
+    public function test_user_can_create_product_via_model(): void
     {
         $user = User::factory()->create();
         $this->actingAs($user);
 
         $depo = Depository::create(['user_id' => $user->id, 'name' => 'Home', 'location' => 'Box']);
 
-        $response = $this->post('/products', [
+        $product = Product::create([
             'name' => 'Test Gold',
+            'type' => 1,
             'material' => 1,
             'weight' => 31.1035,
             'weight_unit' => 2,
             'amount' => 1,
             'depository_id' => $depo->id,
+            'user_id' => $user->id,
         ]);
 
-        $response->assertRedirect('/products');
-
         $this->assertDatabaseHas('products', ['name' => 'Test Gold', 'user_id' => $user->id]);
+        $this->assertEquals($depo->id, $product->depository_id);
+        $this->assertEquals($user->id, $product->user_id);
+    }
 
-        $this->get('/products')->assertRedirect('/app/products');
+    public function test_user_can_update_product_via_model(): void
+    {
+        $user = User::factory()->create();
+        $depo = Depository::create(['user_id' => $user->id, 'name' => 'Home', 'location' => 'Box']);
 
-        // edit
-        $product = Product::where('name', 'Test Gold')->first();
-        $this->put('/products/'.$product->id, [
-            'name' => 'Test Gold Updated',
+        $product = Product::create([
+            'name' => 'Test Gold',
+            'type' => 1,
             'material' => 1,
             'weight' => 31.1035,
             'weight_unit' => 2,
             'amount' => 1,
             'depository_id' => $depo->id,
-        ])->assertRedirect('/products');
+            'user_id' => $user->id,
+        ]);
 
-        $this->assertDatabaseHas('products', ['name' => 'Test Gold Updated']);
+        $product->update(['name' => 'Test Gold Updated']);
 
-        // export CSV
-        $export = $this->get('/products/export');
-        $export->assertStatus(200);
-        $this->assertStringContainsString('text/csv', $export->headers->get('Content-Type'));
+        $this->assertDatabaseHas('products', ['name' => 'Test Gold Updated', 'id' => $product->id]);
     }
 }

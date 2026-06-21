@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Depository;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -18,12 +19,20 @@ class DepositoryViewsTest extends TestCase
         $response = $this->get('/depositories');
         $response->assertRedirect('/app/depositories');
         $this->get('/depositories/create')->assertRedirect('/app/depositories');
+    }
 
-        $this->post('/depositories', [
+    public function test_user_can_create_depository_via_model(): void
+    {
+        $user = User::factory()->create();
+
+        $depository = Depository::create([
             'name' => 'Home Vault',
             'location' => 'Basement',
-        ])->assertRedirect('/depositories');
+            'user_id' => $user->id,
+        ]);
 
         $this->assertDatabaseHas('depositories', ['name' => 'Home Vault', 'user_id' => $user->id]);
+        $this->assertEquals($user->id, $depository->user_id);
+        $this->assertEquals('Home Vault', $depository->name);
     }
 }

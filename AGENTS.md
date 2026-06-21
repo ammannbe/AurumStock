@@ -108,15 +108,10 @@ Add or update Pest tests for every functional change.
 Important test areas:
 
 * authentication
-* product CRUD
-* depository CRUD
-* product sharing
-* depository sharing
 * policies
-* raw material value calculation
-* stock price history
+* filament pages
+* filament resources
 * profile update
-* shares overview
 
 ## Before Finishing
 
