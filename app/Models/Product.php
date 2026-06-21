@@ -123,19 +123,22 @@ class Product extends Model
     {
         return Attribute::make(
             get: function () {
-                /** @var StockPrice|null */
-                $stock = $this->stockPrice;
                 /** @var Exchange|null */
                 $exchange = $this->exchange;
 
-                if (! $stock || ! $stock->price || ! $exchange || ! $exchange->value) {
+                if (! $exchange || ! $exchange->value || ! $this->price) {
                     return null;
                 }
 
-                $price = $this->price;
-                $priceInUSD = $price * $exchange->value;
+                $materialValue = $this->material_value_total;
 
-                return ($stock->price - $priceInUSD) / $priceInUSD * 100;
+                if (! $materialValue) {
+                    return null;
+                }
+
+                $priceInUSD = $this->price / $exchange->value;
+
+                return ($materialValue - $priceInUSD) / $priceInUSD * 100;
             },
         );
     }
