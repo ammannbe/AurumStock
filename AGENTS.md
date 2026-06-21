@@ -44,6 +44,8 @@ ddev composer pint
 ddev composer phpstan
 ```
 
+If any command fails, repeat the process from the beginning.
+
 ## General Rules
 
 * Use Laravel conventions unless explicitly told otherwise.

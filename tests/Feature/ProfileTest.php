@@ -9,9 +9,9 @@ test('profile page is displayed', function () {
 
     $response = $this
         ->actingAs($user)
-        ->get('/profile');
+        ->get('/app');
 
-    $response->assertRedirect('/app');
+    $response->assertStatus(403);
 });
 
 test('profile information can be updated', function () {

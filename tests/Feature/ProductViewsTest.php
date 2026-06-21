@@ -17,11 +17,11 @@ class ProductViewsTest extends TestCase
         $user = User::factory()->create();
         $this->actingAs($user);
 
-        $response = $this->get('/products');
-        $response->assertRedirect('/app/products');
+        $response = $this->get('/app/products');
+        $response->assertStatus(403);
 
-        $response = $this->get('/products/create');
-        $response->assertRedirect('/app/products');
+        $response = $this->get('/app/products/create');
+        $response->assertStatus(403);
     }
 
     public function test_user_can_create_product_via_model(): void

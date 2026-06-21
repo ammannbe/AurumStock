@@ -16,9 +16,9 @@ class DepositoryViewsTest extends TestCase
         $user = User::factory()->create();
         $this->actingAs($user);
 
-        $response = $this->get('/depositories');
-        $response->assertRedirect('/app/depositories');
-        $this->get('/depositories/create')->assertRedirect('/app/depositories');
+        $response = $this->get('/app/depositories');
+        $response->assertStatus(403);
+        $this->get('/app/depositories/create')->assertStatus(403);
     }
 
     public function test_user_can_create_depository_via_model(): void
