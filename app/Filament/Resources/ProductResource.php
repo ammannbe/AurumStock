@@ -29,11 +29,12 @@ use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\IconColumn;
-use Filament\Tables\Columns\Summarizers\Average;
 use Filament\Tables\Columns\Summarizers\Sum;
+use Filament\Tables\Columns\Summarizers\Summarizer;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\Storage;
 
 class ProductResource extends Resource
@@ -162,7 +163,7 @@ class ProductResource extends Resource
                 ->step(0.01)
                 ->label('Purchase Price'),
             Select::make('price_currency')
-                ->label('Purchase Price Currency')
+                ->label('Purchase Currency')
                 ->options(Currency::toArray())
                 ->searchable()
                 ->nullable(),
@@ -213,26 +214,104 @@ class ProductResource extends Resource
                 ),
 
             TextColumn::make('material')
-                ->badge()
                 ->formatStateUsing(fn (Material $state) => $state->symbol())
+                ->sortable()
+                ->badge()
                 ->icon(fn (Material $state) => $state->icon())
                 ->color(fn (Material $state) => $state->color())
                 ->tooltip(fn (Material $state) => $state->name),
             TextColumn::make('weight')
                 ->label('Weight')
-                ->getStateUsing(fn (Product $record) => weight($record->weight, $record->weight_unit->symbol())),
-            TextColumn::make('weight_g')
-                ->label('Weight (g)')
-                ->getStateUsing(fn (Product $record) => weight($record->weight_unit->toGram($record->weight), $record->weight_unit->symbol()))
-                ->toggleable(isToggledHiddenByDefault: true),
-            TextColumn::make('weight_oz')
-                ->label('Weight (oz)')
-                ->getStateUsing(fn (Product $record) => weight($record->weight_unit->toTroyOunce($record->weight), $record->weight_unit->symbol()))
-                ->toggleable(isToggledHiddenByDefault: true),
-            TextColumn::make('amount')->label('Amount')->sortable(),
+                ->numeric()
+                ->suffix(fn (Product $record) => ' '.$record->weight_unit->symbol()),
+            TextColumn::make('weight_total')
+                ->label('Total Weight')
+                ->numeric()
+                ->suffix(fn (Product $record) => ' '.$record->weight_unit->symbol())
+                ->summarize([
+                    Summarizer::make()
+                        ->label('Gold')
+                        ->numeric()
+                        ->suffix(' '.WeightUnit::Gram->symbol())
+                        ->query(fn (Builder $query) => $query->where('material', Material::Gold->value))
+                        ->using(function (Builder $query) {
+                            return $query->get()->sum(
+                                fn ($product) => WeightUnit::from($product->weight_unit)->toGram($product->weight) * $product->amount
+                            );
+                        }),
+                    Summarizer::make()
+                        ->label('Silver')
+                        ->numeric()
+                        ->suffix(' '.WeightUnit::Gram->symbol())
+                        ->query(fn (Builder $query) => $query->where('material', Material::Silver->value))
+                        ->using(function (Builder $query) {
+                            return $query->get()->sum(
+                                fn ($product) => WeightUnit::from($product->weight_unit)->toGram($product->weight) * $product->amount
+                            );
+                        }),
+                    Summarizer::make()
+                        ->label('Platinum')
+                        ->numeric()
+                        ->suffix(' '.WeightUnit::Gram->symbol())
+                        ->query(fn (Builder $query) => $query->where('material', Material::Platinum->value))
+                        ->using(function (Builder $query) {
+                            return $query->get()->sum(
+                                fn ($product) => WeightUnit::from($product->weight_unit)->toGram($product->weight) * $product->amount
+                            );
+                        }),
+                    Summarizer::make()
+                        ->label('Palladium')
+                        ->numeric()
+                        ->suffix(' '.WeightUnit::Gram->symbol())
+                        ->query(fn (Builder $query) => $query->where('material', Material::Palladium->value))
+                        ->using(function (Builder $query) {
+                            return $query->get()->sum(
+                                fn ($product) => WeightUnit::from($product->weight_unit)->toGram($product->weight) * $product->amount
+                            );
+                        }),
+                    Summarizer::make()
+                        ->label('Total')
+                        ->numeric()
+                        ->suffix(' '.WeightUnit::Gram->symbol())
+                        ->using(function (Builder $query) {
+                            return $query->get()->sum(
+                                fn ($product) => WeightUnit::from($product->weight_unit)->toGram($product->weight)
+                            );
+                        }),
+                ]),
+            TextColumn::make('amount')
+                ->label('Amount')
+                ->numeric()
+                ->summarize([
+                    Sum::make()
+                        ->label('Gold')
+                        ->numeric()
+                        ->query(fn (Builder $query) => $query->where('material', Material::Gold->value)),
+                    Sum::make()
+                        ->label('Silver')
+                        ->numeric()
+                        ->query(fn (Builder $query) => $query->where('material', Material::Silver->value)),
+                    Sum::make()
+                        ->label('Platinum')
+                        ->numeric()
+                        ->query(fn (Builder $query) => $query->where('material', Material::Platinum->value)),
+                    Sum::make()
+                        ->label('Palladium')
+                        ->numeric()
+                        ->query(fn (Builder $query) => $query->where('material', Material::Palladium->value)),
+                    Sum::make()
+                        ->label('Total')
+                        ->numeric(),
+                ])
+                ->sortable(),
             TextColumn::make('depository.name')->label('Depository')->sortable(),
-            TextColumn::make('price')->label('Price')->money(fn (Product $record) => $record->price_currency),
-            TextColumn::make('material_value')->label('Material Value')->money('USD')->sortable(),
+            TextColumn::make('price')->label('Purchase Price')->money(fn (Product $record) => $record->price_currency),
+            TextColumn::make('material_value_total')->label('Material Value')->money('USD')->sortable(),
+            TextColumn::make('price_trend')
+                ->label('Price Trend')
+                ->numeric(decimalPlaces: 0)
+                ->suffix(' %')
+                ->sortable(),
             TextColumn::make('year')->label('Year')->sortable(),
 
             TextColumn::make('text_front')->label('Text Front')->limit(30)->toggleable(isToggledHiddenByDefault: true),
@@ -276,10 +355,9 @@ class ProductResource extends Resource
         ])->filters([
             SelectFilter::make('material')->options(collect(Material::cases())->mapWithKeys(fn ($c) => [$c->value => $c->name])->toArray()),
             SelectFilter::make('type')->options(collect(ProductType::cases())->mapWithKeys(fn ($c) => [$c->value => $c->name])->toArray()),
-            SelectFilter::make('weight_unit')->options(collect(WeightUnit::cases())->mapWithKeys(fn ($c) => [$c->value => $c->label()])->toArray()),
             SelectFilter::make('depository_id')->label('Depository')->options(fn () => Depository::where('user_id', auth()->id())->pluck('name', 'id')),
             SelectFilter::make('year')->options(fn () => Product::query()->distinct()->pluck('year', 'year')->filter()->toArray()),
-            SelectFilter::make('price_currency')->label('Currency')->options(fn () => Product::query()->distinct()->pluck('price_currency', 'price_currency')->filter()->toArray()),
+            SelectFilter::make('price_currency')->label('Purchase Currency')->options(fn () => Product::query()->distinct()->pluck('price_currency', 'price_currency')->filter()->toArray()),
         ])->defaultSort('name');
     }
 

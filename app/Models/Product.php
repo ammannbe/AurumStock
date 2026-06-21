@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
  * @property int $id
@@ -30,11 +31,35 @@ class Product extends Model
     use HasFactory;
 
     protected $fillable = [
-        'user_id', 'depository_id', 'name', 'type', 'material', 'weight', 'weight_unit', 'amount',
-        'face_value', 'year', 'reference_number', 'size', 'price', 'price_currency',
-        'front_image_path', 'back_image_path', 'text_front', 'text_back', 'assets', 'notes',
-        'quality', 'certificate', 'manufacturer', 'country_of_origin', 'fineness',
-        'packaging', 'mintage', 'purchase_date', 'taxed_date',
+        'user_id',
+        'depository_id',
+        'name',
+        'type',
+        'material',
+        'weight',
+        'weight_unit',
+        'amount',
+        'face_value',
+        'year',
+        'reference_number',
+        'size',
+        'price',
+        'price_currency',
+        'front_image_path',
+        'back_image_path',
+        'text_front',
+        'text_back',
+        'assets',
+        'notes',
+        'quality',
+        'certificate',
+        'manufacturer',
+        'country_of_origin',
+        'fineness',
+        'packaging',
+        'mintage',
+        'purchase_date',
+        'taxed_date',
     ];
 
     protected $casts = [
@@ -50,18 +75,67 @@ class Product extends Model
     ];
 
     /**
-     * @return Attribute<string, never>
+     * @return Attribute<int|float, never>
      */
     protected function materialValue(): Attribute
     {
         return Attribute::make(
             get: function () {
-                $stock = StockPrice::material($this->material)->first();
+                /** @var StockPrice|null */
+                $stock = $this->stockPrice;
                 if (! $stock || ! $stock->price) {
                     return null;
                 }
 
-                return $this->weight_unit->toTroyOunce($this->weight) * $stock->price * $this->amount;
+                return $this->weight_unit->toTroyOunce($this->weight) * $stock->price;
+            },
+        );
+    }
+
+    /**
+     * @return Attribute<int|float, never>
+     */
+    protected function materialValueTotal(): Attribute
+    {
+        return Attribute::make(
+            get: function () {
+                return $this->material_value * $this->amount;
+            },
+        );
+    }
+
+    /**
+     * @return Attribute<string, never>
+     */
+    protected function weightTotal(): Attribute
+    {
+        return Attribute::make(
+            get: function () {
+                return $this->weight * $this->amount;
+            },
+        );
+    }
+
+    /**
+     * @return Attribute<string, never>
+     */
+    public function priceTrend(): Attribute
+    {
+        return Attribute::make(
+            get: function () {
+                /** @var StockPrice|null */
+                $stock = $this->stockPrice;
+                /** @var Exchange|null */
+                $exchange = $this->exchange;
+
+                if (! $stock || ! $stock->price || ! $exchange || ! $exchange->value) {
+                    return null;
+                }
+
+                $price = $this->price;
+                $priceInUSD = $price * $exchange->value;
+
+                return ($stock->price - $priceInUSD) / $priceInUSD * 100;
             },
         );
     }
@@ -79,5 +153,23 @@ class Product extends Model
     public function shares(): HasMany
     {
         return $this->hasMany(ProductShare::class);
+    }
+
+    public function exchange(): HasOne
+    {
+        return $this->hasOne(
+            Exchange::class,
+            'currency', // exchanges.currency
+            'price_currency'  // products.price_currency
+        );
+    }
+
+    public function stockPrice(): HasOne
+    {
+        return $this->hasOne(
+            StockPrice::class,
+            'material', // stock_prices.material
+            'material'  // products.material
+        );
     }
 }

@@ -1,15 +1,17 @@
 <?php
 
+use App\Models\User;
+use Carbon\Carbon;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
  * @throws NotFoundHttpException
  */
-function user(): \App\Models\User
+function user(): User
 {
     abort_unless(auth()->check(), 403);
 
-    /** @var \App\Models\User */
+    /** @var User */
     return auth()->user();
 }
 
@@ -79,7 +81,7 @@ function moneyOrPercent(float|int|null $amount = null, ?string $symbol = null, b
     return money($amount, $showUnit ? $symbol : false);
 }
 
-function formatDate(?\Carbon\Carbon $date = null, string $format = 'L'): ?string
+function formatDate(?Carbon $date = null, string $format = 'L'): ?string
 {
     return $date?->isoFormat($format);
 }
@@ -141,5 +143,5 @@ function firstPolicy($abilities, $argumentsArray = []): ?string
 
 function slugifyClass(string $class): string
 {
-    return \Str::kebab((new ReflectionClass(new $class))->getShortName());
+    return Str::kebab((new ReflectionClass(new $class))->getShortName());
 }
