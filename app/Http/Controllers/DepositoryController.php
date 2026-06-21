@@ -10,13 +10,16 @@ class DepositoryController extends Controller
     public function index()
     {
         $depositories = Depository::where('user_id', auth()->id())->paginate(10);
-
-        return view('depositories.index', compact('depositories'));
+        /** @var view-string $viewName */
+        $viewName = 'depositories.index';
+        return view($viewName, compact('depositories'));
     }
 
     public function create()
     {
-        return view('depositories.create');
+        /** @var view-string $viewName */
+        $viewName = 'depositories.create';
+        return view($viewName);
     }
 
     public function store(Request $request)
@@ -36,15 +39,17 @@ class DepositoryController extends Controller
     public function show(Depository $depository)
     {
         abort_unless($depository->user_id === auth()->id(), 403);
-
-        return view('depositories.show', compact('depository'));
+        /** @var view-string $viewName */
+        $viewName = 'depositories.show';
+        return view($viewName, compact('depository'));
     }
 
     public function edit(Depository $depository)
     {
         abort_unless($depository->user_id === auth()->id(), 403);
-
-        return view('depositories.edit', compact('depository'));
+        /** @var view-string $viewName */
+        $viewName = 'depositories.edit';
+        return view($viewName, compact('depository'));
     }
 
     public function update(Request $request, Depository $depository)

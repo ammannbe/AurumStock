@@ -13,7 +13,8 @@ class SharesOverviewController extends Controller
         $user = $request->user();
         $productShares = ProductShare::where('shared_with_user_id', $user->id)->with('product')->get();
         $depositoryShares = DepositoryShare::where('shared_with_user_id', $user->id)->with('depository')->get();
-
-        return view('profile.shares', compact('productShares', 'depositoryShares'));
+        /** @var view-string $viewName */
+        $viewName = 'profile.shares';
+        return view($viewName, compact('productShares', 'depositoryShares'));
     }
 }

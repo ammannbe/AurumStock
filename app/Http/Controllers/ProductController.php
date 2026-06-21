@@ -13,15 +13,17 @@ class ProductController extends Controller
     public function index()
     {
         $products = Product::where('user_id', auth()->id())->paginate(10);
-
-        return view('products.index', compact('products'));
+        /** @var view-string $viewName */
+        $viewName = 'products.index';
+        return view($viewName, compact('products'));
     }
 
     public function create()
     {
         $depositories = Depository::where('user_id', auth()->id())->pluck('name', 'id');
-
-        return view('products.create', compact('depositories'));
+        /** @var view-string $viewName */
+        $viewName = 'products.create';
+        return view($viewName, compact('depositories'));
     }
 
     public function store(Request $request)
@@ -78,8 +80,9 @@ class ProductController extends Controller
     public function show(Product $product)
     {
         abort_unless($product->user_id === auth()->id(), 403);
-
-        return view('products.show', compact('product'));
+        /** @var view-string $viewName */
+        $viewName = 'products.show';
+        return view($viewName, compact('product'));
     }
 
     public function edit(Product $product)
@@ -87,7 +90,9 @@ class ProductController extends Controller
         abort_unless($product->user_id === auth()->id(), 403);
         $depositories = Depository::where('user_id', auth()->id())->pluck('name', 'id');
 
-        return view('products.edit', compact('product', 'depositories'));
+        /** @var view-string $viewName */
+        $viewName = 'products.edit';
+        return view($viewName, compact('product', 'depositories'));
     }
 
     public function update(Request $request, Product $product)
