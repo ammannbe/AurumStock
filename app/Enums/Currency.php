@@ -14,7 +14,7 @@ enum Currency: string
     public static function toArray(): array
     {
         return collect(self::cases())
-            ->mapWithKeys(fn ($c) => [$c->value => $c->value])
+            ->mapWithKeys(fn ($c) => [$c->value => $c->name])
             ->toArray();
     }
 }

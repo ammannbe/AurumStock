@@ -5,7 +5,9 @@ namespace App\Providers;
 use App\Console\Kernel;
 use Filament\Support\Assets\Css;
 use Filament\Support\Assets\Js;
+use Filament\Support\Colors\Color;
 use Filament\Support\Facades\FilamentAsset;
+use Filament\Support\Facades\FilamentColor;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -27,10 +29,19 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        require_once app_path('helpers.php');
+
         // Register product preview JS for Filament
         FilamentAsset::register([
             Js::make('product-previews')->package('app'),
             Css::make('overlay')->package('app'),
+        ]);
+
+        FilamentColor::register([
+            'gold' => Color::Amber,
+            'silver' => Color::Slate,
+            'platinum' => Color::Neutral,
+            'palladium' => Color::Gray,
         ]);
     }
 }

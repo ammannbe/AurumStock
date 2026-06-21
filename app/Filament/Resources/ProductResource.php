@@ -28,7 +28,6 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
-use Filament\Tables\Columns\BadgeColumn;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -55,13 +54,16 @@ class ProductResource extends Resource
                 ->label('Depository')
                 ->options(fn () => Depository::where('user_id', auth()->id())->pluck('name', 'id'))
                 ->searchable()
-                ->required(),
+                ->required()
+                ->default(fn () => Depository::where('user_id', auth()->id())->first()?->id),
             Select::make('type')
                 ->options(collect(ProductType::cases())->mapWithKeys(fn ($c) => [$c->value => $c->name])->toArray())
-                ->required(),
+                ->required()
+                ->default(ProductType::Coin->value),
             Select::make('material')
                 ->options(collect(Material::cases())->mapWithKeys(fn ($c) => [$c->value => $c->name])->toArray())
-                ->required(),
+                ->required()
+                ->default(Material::Gold->value),
             TextInput::make('reference_number')->nullable()->label('Reference Number'),
             TextInput::make('year')->numeric()->nullable()->label('Year'),
 
@@ -88,17 +90,23 @@ class ProductResource extends Resource
                 ->maxLength(255),
 
             // Physical attributes
-            TextInput::make('weight')->numeric()->required()->minValue(0)->step('0.001'),
+            TextInput::make('weight')
+                ->numeric()
+                ->required()
+                ->default(1)
+                ->minValue(0)
+                ->step(0.01),
             Select::make('weight_unit')
                 ->options(collect(WeightUnit::cases())->mapWithKeys(fn ($c) => [$c->value => $c->name])->toArray())
-                ->required(),
+                ->required()
+                ->default(WeightUnit::TroyOunce->value),
             Select::make('fineness')
                 ->label('Fineness')
                 ->options(collect(Fineness::cases())->mapWithKeys(fn ($c) => [$c->value => $c->value])->toArray())
                 ->searchable()
                 ->nullable(),
             TextInput::make('size')->nullable()->label('Size'),
-            TextInput::make('amount')->numeric()->default(1)->required()->minValue(1),
+            TextInput::make('amount')->numeric()->required()->default(1)->minValue(1),
             TextInput::make('face_value')->nullable()->label('Face Value'),
 
             // Provenance / metadata
@@ -149,7 +157,7 @@ class ProductResource extends Resource
                 ->numeric()
                 ->nullable()
                 ->minValue(0)
-                ->step('0.01')
+                ->step(0.01)
                 ->label('Purchase Price'),
             Select::make('price_currency')
                 ->label('Purchase Price Currency')
@@ -202,11 +210,18 @@ class ProductResource extends Resource
                 })($record)
                 ),
 
-            BadgeColumn::make('material')->getStateUsing(fn ($record) => Material::from($record->material)->name),
+            TextColumn::make('material')
+                ->badge()
+                ->formatStateUsing(fn ($state) => Material::from($state)->symbol())
+                ->icon(fn (string $state) => Material::from($state)->icon())
+                ->color(fn (string $state) => Material::from($state)->color())
+                ->tooltip(fn (string $state) => Material::from($state)->name),
             TextColumn::make('weight')->label('Weight'),
             TextColumn::make('amount')->label('Amount'),
             TextColumn::make('depository.name')->label('Depository')->sortable(),
-            TextColumn::make('price')->label('Price'),
+            TextColumn::make('price')
+                ->label('Price')
+                ->getStateUsing(fn ($record) => money($record->price, $record->price_currency)),
             TextColumn::make('raw_material_value')->label('Raw Material USD')->getStateUsing(fn ($record) => $record->rawMaterialValueUsd() ? number_format($record->rawMaterialValueUsd(), 2) : '-'),
             TextColumn::make('year')->label('Year')->sortable(),
 
@@ -243,10 +258,10 @@ class ProductResource extends Resource
                 ->tooltip(fn ($record) => $record->notes ?? '')
                 ->toggleable(isToggledHiddenByDefault: true),
 
-        ])->actions([
+        ])->recordActions([
             EditAction::make()->color('secondary'),
             DeleteAction::make(),
-        ])->bulkActions([
+        ])->toolbarActions([
             DeleteBulkAction::make(),
         ])->filters([
             SelectFilter::make('material')->options(collect(Material::cases())->mapWithKeys(fn ($c) => [$c->value => $c->name])->toArray()),

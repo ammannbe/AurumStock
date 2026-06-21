@@ -21,8 +21,8 @@ class FetchStockPrices extends Command
         $baseUrl = config('services.metalpriceapi.base_url');
         $apiKey = config('services.metalpriceapi.key');
 
-        $mapping = Material::symbolMap();
-        $symbols = implode(',', $mapping);
+        $mapping = Material::symbolMap(true);
+        $symbols = implode(',X', $mapping);
 
         $response = Http::withHeaders(array_filter([
             'Authorization' => $apiKey ? "Bearer {$apiKey}" : null,
