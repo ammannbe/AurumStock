@@ -5,6 +5,16 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * @property int $id
+ * @property int $material
+ * @property float $weight
+ * @property int $amount
+ * @property string|null $front_image_path
+ * @property string|null $back_image_path
+ * @property array|null $assets
+ * @property-read \App\Models\User $owner
+ */
 class Product extends Model
 {
     use HasFactory;

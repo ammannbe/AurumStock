@@ -1,4 +1,6 @@
 <?php
+/** @var \Tests\TestCase $this */
+
 
 use App\Models\User;
 use Illuminate\Auth\Notifications\ResetPassword;

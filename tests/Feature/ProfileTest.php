@@ -1,5 +1,7 @@
 <?php
 
+/** @var \Tests\TestCase $this */
+
 use App\Models\User;
 
 test('profile page is displayed', function () {
