@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Enums\Material;
+use App\Enums\WeightUnit;
 use Database\Factories\ProductFactory;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -41,9 +43,28 @@ class Product extends Model
         'purchase_date' => 'date',
         'taxed_date' => 'date',
         'price' => 'decimal:2',
+        'material' => Material::class,
         'weight' => 'decimal:3',
+        'weight_unit' => WeightUnit::class,
         'mintage' => 'integer',
     ];
+
+    /**
+     * @return Attribute<string, never>
+     */
+    protected function materialValue(): Attribute
+    {
+        return Attribute::make(
+            get: function () {
+                $stock = StockPrice::material($this->material)->first();
+                if (! $stock || ! $stock->price) {
+                    return null;
+                }
+
+                return $this->weight_unit->toTroyOunce($this->weight) * $stock->price * $this->amount;
+            },
+        );
+    }
 
     public function owner(): BelongsTo
     {
@@ -58,16 +79,5 @@ class Product extends Model
     public function shares(): HasMany
     {
         return $this->hasMany(ProductShare::class);
-    }
-
-    public function rawMaterialValueUsd(): ?float
-    {
-        $stock = StockPrice::where('material', $this->material)->first();
-        if (! $stock || ! $stock->price_usd_per_gram) {
-            return null;
-        }
-
-        // weight stored in grams (assume conversion handled elsewhere)
-        return (float) ($this->weight * $stock->price_usd_per_gram * $this->amount);
     }
 }

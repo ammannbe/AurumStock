@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('stock_price_histories', function (Blueprint $table) {
             $table->id();
             $table->foreignId('stock_price_id')->constrained()->cascadeOnDelete();
-            $table->decimal('price_usd_per_gram', 14, 6);
+            $table->decimal('price', 14, 6);
             $table->timestamps();
         });
     }

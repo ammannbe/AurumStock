@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('stock_prices', function (Blueprint $table) {
             $table->id();
             $table->tinyInteger('material')->unique();
-            $table->decimal('price_usd_per_gram', 14, 6);
+            $table->decimal('price', 14, 6);
             $table->timestamp('fetched_at')->nullable();
             $table->timestamps();
         });

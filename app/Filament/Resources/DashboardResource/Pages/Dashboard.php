@@ -50,7 +50,7 @@ class Dashboard extends Page
 
             return [
                 'material' => $p->material ? ($material !== null ? $material->name : $p->material) : '-',
-                'price_usd_per_gram' => number_format($p->price_usd_per_gram, 4),
+                'price' => number_format($p->price, 4),
                 'fetched_at' => $format($p->fetched_at ?? $p->updated_at),
             ];
         })->toArray();

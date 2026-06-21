@@ -16,7 +16,7 @@ class StockPriceFactory extends Factory
     {
         return [
             'material' => 1,
-            'price_usd_per_gram' => $this->faker->randomFloat(6, 10, 80),
+            'price' => $this->faker->randomFloat(6, 10, 80),
             'fetched_at' => now(),
         ];
     }

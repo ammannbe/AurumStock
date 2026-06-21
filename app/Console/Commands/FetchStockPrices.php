@@ -22,7 +22,7 @@ class FetchStockPrices extends Command
         $apiKey = config('services.metalpriceapi.key');
 
         $mapping = Material::symbolMap(true);
-        $symbols = implode(',X', $mapping);
+        $symbols = implode(',', array_map(fn ($m) => 'X'.$m, $mapping));
 
         $response = Http::withHeaders(array_filter([
             'Authorization' => $apiKey ? "Bearer {$apiKey}" : null,
@@ -39,9 +39,8 @@ class FetchStockPrices extends Command
         }
 
         $data = $response->json();
-
         foreach ($mapping as $mat => $symbol) {
-            $rateKey = 'USD'.$symbol;
+            $rateKey = 'USDX'.$symbol;
             $price = isset($data['rates'][$rateKey])
                 ? $data['rates'][$rateKey]
                 : null;
@@ -52,16 +51,13 @@ class FetchStockPrices extends Command
                 continue;
             }
 
-            // assume provider returns per troy ounce by default (MetalpriceAPI often returns oz)
-            $pricePerGram = $price / 31.1034768;
-
             $stock = StockPrice::updateOrCreate(
                 ['material' => $mat],
-                ['price_usd_per_gram' => $pricePerGram, 'fetched_at' => now()]
+                ['price' => $price, 'fetched_at' => now()]
             );
 
-            StockPriceHistory::create(['stock_price_id' => $stock->id, 'price_usd_per_gram' => $pricePerGram]);
-            $this->info("Updated {$symbol}: ".number_format($pricePerGram, 6).' USD/g');
+            StockPriceHistory::create(['stock_price_id' => $stock->id, 'price' => $price]);
+            $this->info("Updated {$symbol}: ".number_format($price, 6).' USD/oz');
         }
 
         return Command::SUCCESS;

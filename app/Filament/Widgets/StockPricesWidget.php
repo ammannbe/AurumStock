@@ -30,7 +30,7 @@ class StockPricesWidget extends TableWidget
 
                 return $record->material ? ($material !== null ? $material->name : $record->material) : '-';
             }),
-            TextColumn::make('price_usd_per_gram')->label('USD / g')->getStateUsing(fn ($record) => number_format($record->price_usd_per_gram, 2)),
+            TextColumn::make('price')->label('USD / oz')->getStateUsing(fn ($record) => number_format($record->price, 2)),
             TextColumn::make('fetched_at')->label('Fetched At')->getStateUsing(fn ($record) => $record->fetched_at ?? $record->updated_at),
         ];
     }

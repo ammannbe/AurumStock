@@ -18,6 +18,19 @@ function emdash(): string
     return '—';
 }
 
+function weight(float|int|null $amount = null, string|false|null $unit = 'g', int $decimals = 3): string
+{
+    if ($amount === null) {
+        return emdash();
+    }
+
+    if ($unit) {
+        return str_replace('.000', '', number_format($amount, $decimals, '.', "'").' '.$unit);
+    }
+
+    return str_replace('.000', '', number_format($amount, $decimals, '.', "'"));
+}
+
 function money(float|int|null $amount = null, string|false|null $unit = 'USD', int $decimals = 2): string
 {
     if ($amount === null) {

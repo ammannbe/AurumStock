@@ -25,7 +25,7 @@ class StockPriceResource extends Resource
     {
         return $schema->schema([
             Select::make('material')->options([1 => 'Gold', 2 => 'Silver', 3 => 'Platinum', 4 => 'Palladium'])->required(),
-            TextInput::make('price_usd_per_gram')->numeric()->required(),
+            TextInput::make('price')->numeric()->required(),
         ]);
     }
 
@@ -33,7 +33,7 @@ class StockPriceResource extends Resource
     {
         return $table->columns([
             TextColumn::make('material'),
-            TextColumn::make('price_usd_per_gram'),
+            TextColumn::make('price'),
             TextColumn::make('fetched_at'),
         ]);
     }
@@ -41,6 +41,6 @@ class StockPriceResource extends Resource
     public static function afterSave(StockPrice $record): void
     {
         // create history entry
-        StockPriceHistory::create(['stock_price_id' => $record->id, 'price_usd_per_gram' => $record->price_usd_per_gram]);
+        StockPriceHistory::create(['stock_price_id' => $record->id, 'price' => $record->price]);
     }
 }

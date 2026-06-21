@@ -13,7 +13,7 @@ class StockPriceHistory extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['stock_price_id', 'price_usd_per_gram'];
+    protected $fillable = ['stock_price_id', 'price'];
 
     public function stockPrice(): BelongsTo
     {

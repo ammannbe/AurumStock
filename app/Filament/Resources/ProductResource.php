@@ -29,6 +29,8 @@ use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\IconColumn;
+use Filament\Tables\Columns\Summarizers\Average;
+use Filament\Tables\Columns\Summarizers\Sum;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -97,7 +99,7 @@ class ProductResource extends Resource
                 ->minValue(0)
                 ->step(0.01),
             Select::make('weight_unit')
-                ->options(collect(WeightUnit::cases())->mapWithKeys(fn ($c) => [$c->value => $c->name])->toArray())
+                ->options(collect(WeightUnit::cases())->mapWithKeys(fn ($c) => [$c->value => $c->label()])->toArray())
                 ->required()
                 ->default(WeightUnit::TroyOunce->value),
             Select::make('fineness')
@@ -197,7 +199,7 @@ class ProductResource extends Resource
                     $backEsc = e($back);
                     $srcEsc = e($src);
 
-                    $imgStyle = 'height:3rem;width:3rem;object-fit:cover;border-radius:0.375rem;cursor:pointer;margin-right:0.5rem';
+                    $imgStyle = 'height: 3rem; width: 3rem; object-fit: contain; border-radius: 0.375rem; cursor: pointer; margin-right: 0.5rem;';
 
                     $dataBackAttr = $back ? " data-back=\"{$backEsc}\"" : '';
                     $dataFrontAttr = $front ? " data-front=\"{$frontEsc}\"" : '';
@@ -212,17 +214,25 @@ class ProductResource extends Resource
 
             TextColumn::make('material')
                 ->badge()
-                ->formatStateUsing(fn ($state) => Material::from($state)->symbol())
-                ->icon(fn (string $state) => Material::from($state)->icon())
-                ->color(fn (string $state) => Material::from($state)->color())
-                ->tooltip(fn (string $state) => Material::from($state)->name),
-            TextColumn::make('weight')->label('Weight'),
-            TextColumn::make('amount')->label('Amount'),
+                ->formatStateUsing(fn (Material $state) => $state->symbol())
+                ->icon(fn (Material $state) => $state->icon())
+                ->color(fn (Material $state) => $state->color())
+                ->tooltip(fn (Material $state) => $state->name),
+            TextColumn::make('weight')
+                ->label('Weight')
+                ->getStateUsing(fn (Product $record) => weight($record->weight, $record->weight_unit->symbol())),
+            TextColumn::make('weight_g')
+                ->label('Weight (g)')
+                ->getStateUsing(fn (Product $record) => weight($record->weight_unit->toGram($record->weight), $record->weight_unit->symbol()))
+                ->toggleable(isToggledHiddenByDefault: true),
+            TextColumn::make('weight_oz')
+                ->label('Weight (oz)')
+                ->getStateUsing(fn (Product $record) => weight($record->weight_unit->toTroyOunce($record->weight), $record->weight_unit->symbol()))
+                ->toggleable(isToggledHiddenByDefault: true),
+            TextColumn::make('amount')->label('Amount')->sortable(),
             TextColumn::make('depository.name')->label('Depository')->sortable(),
-            TextColumn::make('price')
-                ->label('Price')
-                ->getStateUsing(fn ($record) => money($record->price, $record->price_currency)),
-            TextColumn::make('raw_material_value')->label('Raw Material USD')->getStateUsing(fn ($record) => $record->rawMaterialValueUsd() ? number_format($record->rawMaterialValueUsd(), 2) : '-'),
+            TextColumn::make('price')->label('Price')->money(fn (Product $record) => $record->price_currency),
+            TextColumn::make('material_value')->label('Material Value')->money('USD')->sortable(),
             TextColumn::make('year')->label('Year')->sortable(),
 
             TextColumn::make('text_front')->label('Text Front')->limit(30)->toggleable(isToggledHiddenByDefault: true),
@@ -266,7 +276,7 @@ class ProductResource extends Resource
         ])->filters([
             SelectFilter::make('material')->options(collect(Material::cases())->mapWithKeys(fn ($c) => [$c->value => $c->name])->toArray()),
             SelectFilter::make('type')->options(collect(ProductType::cases())->mapWithKeys(fn ($c) => [$c->value => $c->name])->toArray()),
-            SelectFilter::make('weight_unit')->options(collect(WeightUnit::cases())->mapWithKeys(fn ($c) => [$c->value => $c->name])->toArray()),
+            SelectFilter::make('weight_unit')->options(collect(WeightUnit::cases())->mapWithKeys(fn ($c) => [$c->value => $c->label()])->toArray()),
             SelectFilter::make('depository_id')->label('Depository')->options(fn () => Depository::where('user_id', auth()->id())->pluck('name', 'id')),
             SelectFilter::make('year')->options(fn () => Product::query()->distinct()->pluck('year', 'year')->filter()->toArray()),
             SelectFilter::make('price_currency')->label('Currency')->options(fn () => Product::query()->distinct()->pluck('price_currency', 'price_currency')->filter()->toArray()),
