@@ -24,6 +24,10 @@ class StockPrice extends Model
         return $this->hasMany(StockPriceHistory::class);
     }
 
+    /**
+     * @param  Builder<StockPrice>  $query
+     * @return Builder<StockPrice>
+     */
     public function scopeMaterial(Builder $query, Material $material): Builder
     {
         return $query->where('material', $material);

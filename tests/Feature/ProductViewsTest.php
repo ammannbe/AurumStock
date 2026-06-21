@@ -67,4 +67,27 @@ class ProductViewsTest extends TestCase
 
         $this->assertDatabaseHas('products', ['name' => 'Test Gold Updated', 'id' => $product->id]);
     }
+
+    public function test_products_index_renders_with_existing_products(): void
+    {
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        $depo = Depository::create(['user_id' => $user->id, 'name' => 'Home', 'location' => 'Box']);
+
+        // create a product (casts will make weight_unit an enum on model instances)
+        Product::create([
+            'name' => 'Index Product',
+            'type' => 1,
+            'material' => 1,
+            'weight' => 31.1035,
+            'weight_unit' => 2,
+            'amount' => 1,
+            'depository_id' => $depo->id,
+            'user_id' => $user->id,
+        ]);
+
+        $response = $this->get('/app/products');
+        $response->assertStatus(200);
+    }
 }
