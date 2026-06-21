@@ -156,6 +156,9 @@ class ProductResource extends Resource
             DatePicker::make('purchase_date')
                 ->label('Purchase Date')
                 ->nullable(),
+            DatePicker::make('taxed_date')
+                ->label('Taxed Date')
+                ->nullable(),
 
             // Notes
             Textarea::make('notes')->nullable()->columnSpan('full'),
@@ -226,6 +229,7 @@ class ProductResource extends Resource
                 ->toggleable(isToggledHiddenByDefault: true),
             TextColumn::make('mintage')->label('Mintage')->numeric()->toggleable(isToggledHiddenByDefault: true),
             TextColumn::make('purchase_date')->label('Purchase Date')->date()->toggleable(isToggledHiddenByDefault: true),
+            TextColumn::make('taxed_date')->label('Taxed Date')->date()->toggleable(isToggledHiddenByDefault: true),
 
             IconColumn::make('notes')
                 ->label('Notes')

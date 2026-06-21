@@ -14,13 +14,14 @@ class Product extends Model
         'face_value', 'year', 'reference_number', 'size', 'price', 'price_currency',
         'front_image_path', 'back_image_path', 'text_front', 'text_back', 'assets', 'notes',
         'quality', 'certificate', 'manufacturer', 'country_of_origin', 'fineness',
-        'packaging', 'mintage', 'purchase_date',
+        'packaging', 'mintage', 'purchase_date', 'taxed_date',
     ];
 
     protected $casts = [
         'assets' => 'array',
         'certificate' => 'boolean',
         'purchase_date' => 'date',
+        'taxed_date' => 'date',
         'price' => 'decimal:2',
         'weight' => 'decimal:3',
         'mintage' => 'integer',
