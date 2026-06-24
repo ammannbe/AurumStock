@@ -26,7 +26,8 @@ class StockPricesWidget extends TableWidget
             TextColumn::make('material')
                 ->badge()
                 ->getStateUsing(fn ($record) => $record->material->name . ' (' . $record->material->symbol() . ')')
-                ->color(fn ($record) => $record->material->color() ?? null),
+                ->color(fn ($record) => $record->material->color() ?? null)
+                ->icon(fn ($record) => $record->material->icon() ?? null),
             TextColumn::make('price')->money('usd')->label('USD / oz'),
             TextColumn::make('fetched_at')->label('Updated')->isoDate(),
         ];
