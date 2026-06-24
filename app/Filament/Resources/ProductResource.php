@@ -254,7 +254,7 @@ class ProductResource extends Resource
                     $backEsc = e($back);
                     $srcEsc = e($src);
 
-                    $imgStyle = 'height: 3rem; width: 3rem; object-fit: contain; border-radius: 0.375rem; cursor: pointer; margin-right: 0.5rem;';
+                    $imgStyle = 'height: 3rem; min-height: 3rem; width: 3rem; min-width: 3rem; object-fit: contain; border-radius: 0.375rem; cursor: pointer; margin-right: 0.5rem; cursor: zoom-in;';
 
                     $dataBackAttr = $back ? " data-back=\"{$backEsc}\"" : '';
                     $dataFrontAttr = $front ? " data-front=\"{$frontEsc}\"" : '';
