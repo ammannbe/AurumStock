@@ -6,7 +6,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
-test('password can be updated', function () {
+test('legacy password update endpoint is not available', function () {
     $user = User::factory()->create();
 
     $response = $this
@@ -18,14 +18,12 @@ test('password can be updated', function () {
             'password_confirmation' => 'new-password',
         ]);
 
-    $response
-        ->assertSessionHasNoErrors()
-        ->assertRedirect('/app');
+    $response->assertNotFound();
 
-    $this->assertTrue(Hash::check('new-password', $user->refresh()->password));
+    $this->assertTrue(Hash::check('password', $user->refresh()->password));
 });
 
-test('correct password must be provided to update password', function () {
+test('legacy password update endpoint with invalid current password is not available', function () {
     $user = User::factory()->create();
 
     $response = $this
@@ -37,7 +35,7 @@ test('correct password must be provided to update password', function () {
             'password_confirmation' => 'new-password',
         ]);
 
-    $response
-        ->assertSessionHasErrorsIn('updatePassword', 'current_password')
-        ->assertRedirect('/app');
+    $response->assertNotFound();
+
+    $this->assertTrue(Hash::check('password', $user->refresh()->password));
 });

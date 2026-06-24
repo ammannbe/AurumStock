@@ -5,40 +5,37 @@
 use App\Models\User;
 use Tests\TestCase;
 
-test('login screen can be rendered', function () {
+test('legacy laravel login route is not available', function () {
     $response = $this->get('/login');
+
+    $response->assertNotFound();
+});
+
+test('filament user login screen can be rendered', function () {
+    $response = $this->get('/app/login');
 
     $response->assertStatus(200);
 });
 
-test('users can authenticate using the login screen', function () {
-    $user = User::factory()->create();
+test('guests are redirected to filament login when opening user panel', function () {
+    $response = $this->get('/app');
 
-    $response = $this->post('/login', [
-        'email' => $user->email,
-        'password' => 'password',
-    ]);
-
-    $this->assertAuthenticated();
-    $response->assertRedirect('/app');
+    $response->assertRedirect('/app/login');
 });
 
-test('users can not authenticate with invalid password', function () {
+test('authenticated users can access user panel', function () {
     $user = User::factory()->create();
 
-    $this->post('/login', [
-        'email' => $user->email,
-        'password' => 'wrong-password',
-    ]);
+    $response = $this->actingAs($user)->get('/app');
 
-    $this->assertGuest();
+    $response->assertStatus(302);
+    expect($response->headers->get('Location'))->not->toContain('/app/login');
 });
 
-test('users can logout', function () {
+test('users can logout from filament user panel', function () {
     $user = User::factory()->create();
 
-    $response = $this->actingAs($user)->post('/logout');
+    $response = $this->actingAs($user)->post('/app/logout');
 
-    $this->assertGuest();
-    $response->assertRedirect('/');
+    $response->assertStatus(302);
 });
