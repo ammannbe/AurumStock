@@ -22,6 +22,7 @@ enum Manufacturer: string
     case ChinaMint = 'china_mint';
     case JohnsonMatthey = 'johnson_matthey';
     case Engelhard = 'engelhard';
+    case Metalor = 'metalor';
 
     public function label(): string
     {
@@ -44,6 +45,7 @@ enum Manufacturer: string
             self::ChinaMint => 'China Mint',
             self::JohnsonMatthey => 'Johnson Matthey',
             self::Engelhard => 'Engelhard',
+            self::Metalor => 'Metalor',
         };
     }
 }

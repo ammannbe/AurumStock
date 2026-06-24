@@ -221,6 +221,11 @@ class ProductResource extends Resource
     public static function table(Table $table): Table
     {
         return $table->columns([
+            TextColumn::make('type')
+                ->label('Type')
+                ->formatStateUsing(fn ($state) => ProductType::from($state)->name)
+                ->sortable()
+                ->toggleable(),
             TextColumn::make('name')->searchable()->label('Name'),
             TextColumn::make('front_image_preview')
                 ->label('Image')
@@ -249,8 +254,8 @@ class ProductResource extends Resource
                     $imgHtml = "<img class=\"product-preview\" src=\"{$srcEsc}\" alt=\"{$altEsc}\"{$dataFrontAttr}{$dataBackAttr} style=\"{$imgStyle}\" />";
 
                     return $imgHtml;
-                })($record)
-                ),
+                })($record))
+                ->toggleable(),
 
             TextColumn::make('material')
                 ->formatStateUsing(fn (Material $state) => $state->symbol())
@@ -258,15 +263,18 @@ class ProductResource extends Resource
                 ->badge()
                 ->icon(fn (Material $state) => $state->icon())
                 ->color(fn (Material $state) => $state->color())
-                ->tooltip(fn (Material $state) => $state->name),
+                ->tooltip(fn (Material $state) => $state->name)
+                ->toggleable(),
             TextColumn::make('weight')
                 ->label('Weight')
                 ->numeric()
-                ->suffix(fn (Product $record) => ' '.$record->weight_unit->symbol()),
+                ->suffix(fn (Product $record) => ' '.$record->weight_unit->symbol())
+                ->toggleable(),
             TextColumn::make('weight_total')
                 ->label('Total Weight')
                 ->numeric()
                 ->suffix(fn (Product $record) => ' '.$record->weight_unit->symbol())
+                ->toggleable()
                 ->summarize([
                     Summarizer::make()
                         ->label('Gold')
@@ -351,6 +359,7 @@ class ProductResource extends Resource
             TextColumn::make('amount')
                 ->label('Amount')
                 ->numeric()
+                ->toggleable()
                 ->summarize([
                     Sum::make()
                         ->label('Gold')
@@ -373,10 +382,11 @@ class ProductResource extends Resource
                         ->numeric(),
                 ])
                 ->sortable(),
-            TextColumn::make('depository.name')->label('Depository')->sortable(),
+            TextColumn::make('depository.name')->label('Depository')->sortable()->toggleable(),
             TextColumn::make('price')
                 ->label('Purchase Price')
                 ->money(fn (Product $record) => $record->price_currency)
+                ->toggleable()
                 ->summarize([
                     Summarizer::make()
                         ->label('Gold')
@@ -488,6 +498,7 @@ class ProductResource extends Resource
                 ->getStateUsing(fn (Product $record) => static::convertUsdToPreferred($record->material_value_total))
                 ->money(fn () => static::preferredCurrencyCode())
                 ->sortable()
+                ->toggleable()
                 ->summarize([
                     Summarizer::make()
                         ->label('Gold')
@@ -583,6 +594,7 @@ class ProductResource extends Resource
                 ->label('Price Trend')
                 ->numeric(decimalPlaces: 0)
                 ->suffix(' %')
+                ->toggleable()
                 ->summarize([
                     Summarizer::make()
                         ->label('Gold')
@@ -728,7 +740,7 @@ class ProductResource extends Resource
                             return ($totalMaterialUsd - $totalPurchaseUsd) / $totalPurchaseUsd * 100;
                         }),
                 ]),
-            TextColumn::make('year')->label('Year')->sortable(),
+            TextColumn::make('year')->label('Year')->sortable()->toggleable(),
 
             TextColumn::make('text_front')->label('Text Front')->limit(30)->toggleable(isToggledHiddenByDefault: true),
             TextColumn::make('text_back')->label('Text Back')->limit(30)->toggleable(isToggledHiddenByDefault: true),
