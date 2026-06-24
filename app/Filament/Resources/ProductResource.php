@@ -14,6 +14,7 @@ use App\Filament\Resources\ProductResource\Pages\CreateProduct;
 use App\Filament\Resources\ProductResource\Pages\EditProduct;
 use App\Filament\Resources\ProductResource\Pages\ListProducts;
 use App\Models\Depository;
+use App\Models\Exchange;
 use App\Models\Product;
 use BackedEnum;
 use Filament\Actions\DeleteAction;
@@ -35,17 +36,54 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Query\Builder;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 
 class ProductResource extends Resource
 {
     protected static ?string $model = Product::class;
 
+    /** @var array<string, float> */
+    protected static array $exchangeRateCache = [];
+
     protected static BackedEnum|string|null $navigationIcon = 'heroicon-o-cube';
 
     protected static ?string $navigationLabel = 'Products';
 
     protected static \UnitEnum|string|null $navigationGroup = 'Management';
+
+    protected static function preferredCurrencyCode(): string
+    {
+        $preferredCurrency = Auth::user()?->preferred_currency;
+
+        if ($preferredCurrency instanceof Currency) {
+            return $preferredCurrency->value;
+        }
+
+        return Currency::USD->value;
+    }
+
+    protected static function preferredCurrencyRate(): float
+    {
+        $currency = static::preferredCurrencyCode();
+
+        if ($currency === Currency::USD->value) {
+            return 1.0;
+        }
+
+        if (array_key_exists($currency, static::$exchangeRateCache)) {
+            return static::$exchangeRateCache[$currency];
+        }
+
+        $rate = (float) (Exchange::query()->where('currency', $currency)->value('value') ?? 0);
+
+        return static::$exchangeRateCache[$currency] = $rate > 0 ? $rate : 1.0;
+    }
+
+    protected static function convertUsdToPreferred(float|int|null $amount): float
+    {
+        return (float) ($amount ?? 0) * static::preferredCurrencyRate();
+    }
 
     public static function form(Schema $schema): Schema
     {
@@ -343,7 +381,7 @@ class ProductResource extends Resource
                     Summarizer::make()
                         ->label('Gold')
                         ->numeric()
-                        ->money('usd')
+                        ->money(fn () => static::preferredCurrencyCode())
                         ->query(fn (Builder $query) => $query->where('material', Material::Gold->value))
                         ->using(function (Builder $query) {
                             $ids = $query->pluck('id')->filter()->toArray();
@@ -359,12 +397,12 @@ class ProductResource extends Resource
                                 return $priceInUSD * ($p->amount ?? 1);
                             });
 
-                            return $totalUsd;
+                            return static::convertUsdToPreferred($totalUsd);
                         }),
                     Summarizer::make()
                         ->label('Silver')
                         ->numeric()
-                        ->money('usd')
+                        ->money(fn () => static::preferredCurrencyCode())
                         ->query(fn (Builder $query) => $query->where('material', Material::Silver->value))
                         ->using(function (Builder $query) {
                             $ids = $query->pluck('id')->filter()->toArray();
@@ -380,12 +418,12 @@ class ProductResource extends Resource
                                 return $priceInUSD * ($p->amount ?? 1);
                             });
 
-                            return $totalUsd;
+                            return static::convertUsdToPreferred($totalUsd);
                         }),
                     Summarizer::make()
                         ->label('Platinum')
                         ->numeric()
-                        ->money('usd')
+                        ->money(fn () => static::preferredCurrencyCode())
                         ->query(fn (Builder $query) => $query->where('material', Material::Platinum->value))
                         ->using(function (Builder $query) {
                             $ids = $query->pluck('id')->filter()->toArray();
@@ -401,12 +439,12 @@ class ProductResource extends Resource
                                 return $priceInUSD * ($p->amount ?? 1);
                             });
 
-                            return $totalUsd;
+                            return static::convertUsdToPreferred($totalUsd);
                         }),
                     Summarizer::make()
                         ->label('Palladium')
                         ->numeric()
-                        ->money('usd')
+                        ->money(fn () => static::preferredCurrencyCode())
                         ->query(fn (Builder $query) => $query->where('material', Material::Palladium->value))
                         ->using(function (Builder $query) {
                             $ids = $query->pluck('id')->filter()->toArray();
@@ -422,12 +460,12 @@ class ProductResource extends Resource
                                 return $priceInUSD * ($p->amount ?? 1);
                             });
 
-                            return $totalUsd;
+                            return static::convertUsdToPreferred($totalUsd);
                         }),
                     Summarizer::make()
                         ->label('Total')
                         ->numeric()
-                        ->money('usd')
+                        ->money(fn () => static::preferredCurrencyCode())
                         ->using(function (Builder $query) {
                             $ids = $query->pluck('id')->filter()->toArray();
                             if (empty($ids)) {
@@ -442,18 +480,19 @@ class ProductResource extends Resource
                                 return $priceInUSD * ($p->amount ?? 1);
                             });
 
-                            return $totalUsd;
+                            return static::convertUsdToPreferred($totalUsd);
                         }),
                 ]),
             TextColumn::make('material_value_total')
                 ->label('Material Value')
-                ->money('USD')
+                ->getStateUsing(fn (Product $record) => static::convertUsdToPreferred($record->material_value_total))
+                ->money(fn () => static::preferredCurrencyCode())
                 ->sortable()
                 ->summarize([
                     Summarizer::make()
                         ->label('Gold')
                         ->numeric()
-                        ->money('usd')
+                        ->money(fn () => static::preferredCurrencyCode())
                         ->query(fn (Builder $query) => $query->where('material', Material::Gold->value))
                         ->using(function (Builder $query) {
                             $ids = $query->pluck('id')->filter()->toArray();
@@ -465,12 +504,12 @@ class ProductResource extends Resource
                                 return $p->material_value_total ?? 0;
                             });
 
-                            return $totalMaterialUsd;
+                            return static::convertUsdToPreferred($totalMaterialUsd);
                         }),
                     Summarizer::make()
                         ->label('Silver')
                         ->numeric()
-                        ->money('usd')
+                        ->money(fn () => static::preferredCurrencyCode())
                         ->query(fn (Builder $query) => $query->where('material', Material::Silver->value))
                         ->using(function (Builder $query) {
                             $ids = $query->pluck('id')->filter()->toArray();
@@ -482,12 +521,12 @@ class ProductResource extends Resource
                                 return $p->material_value_total ?? 0;
                             });
 
-                            return $totalMaterialUsd;
+                            return static::convertUsdToPreferred($totalMaterialUsd);
                         }),
                     Summarizer::make()
                         ->label('Platinum')
                         ->numeric()
-                        ->money('usd')
+                        ->money(fn () => static::preferredCurrencyCode())
                         ->query(fn (Builder $query) => $query->where('material', Material::Platinum->value))
                         ->using(function (Builder $query) {
                             $ids = $query->pluck('id')->filter()->toArray();
@@ -499,12 +538,12 @@ class ProductResource extends Resource
                                 return $p->material_value_total ?? 0;
                             });
 
-                            return $totalMaterialUsd;
+                            return static::convertUsdToPreferred($totalMaterialUsd);
                         }),
                     Summarizer::make()
                         ->label('Palladium')
                         ->numeric()
-                        ->money('usd')
+                        ->money(fn () => static::preferredCurrencyCode())
                         ->query(fn (Builder $query) => $query->where('material', Material::Palladium->value))
                         ->using(function (Builder $query) {
                             $ids = $query->pluck('id')->filter()->toArray();
@@ -516,12 +555,12 @@ class ProductResource extends Resource
                                 return $p->material_value_total ?? 0;
                             });
 
-                            return $totalMaterialUsd;
+                            return static::convertUsdToPreferred($totalMaterialUsd);
                         }),
                     Summarizer::make()
                         ->label('Total')
                         ->numeric()
-                        ->money('usd')
+                        ->money(fn () => static::preferredCurrencyCode())
                         ->using(function (Builder $query) {
                             $ids = $query->pluck('id')->filter()->toArray();
 
@@ -537,7 +576,7 @@ class ProductResource extends Resource
                                 return $p->material_value_total ?? 0;
                             });
 
-                            return $totalMaterialUsd;
+                            return static::convertUsdToPreferred($totalMaterialUsd);
                         }),
                 ]),
             TextColumn::make('price_trend')

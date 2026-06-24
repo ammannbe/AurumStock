@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Enums\Currency;
 use Database\Factories\UserFactory;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
@@ -16,7 +17,7 @@ use Illuminate\Notifications\Notifiable;
 /**
  * @method static \Database\Factories\UserFactory factory(...$parameters)
  */
-#[Fillable(['name', 'email', 'password', 'notes', 'two_factor_enabled', 'passkey_enabled'])]
+#[Fillable(['name', 'email', 'password', 'notes', 'two_factor_enabled', 'passkey_enabled', 'preferred_currency'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable implements FilamentUser
 {
@@ -28,6 +29,7 @@ class User extends Authenticatable implements FilamentUser
         'password' => 'hashed',
         'two_factor_enabled' => 'boolean',
         'passkey_enabled' => 'boolean',
+        'preferred_currency' => Currency::class,
     ];
 
     public function products(): HasMany

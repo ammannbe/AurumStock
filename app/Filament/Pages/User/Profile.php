@@ -2,8 +2,10 @@
 
 namespace App\Filament\Pages\User;
 
+use App\Enums\Currency;
 use App\Models\User;
 use BackedEnum;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Concerns\InteractsWithForms;
@@ -38,10 +40,21 @@ class Profile extends Page implements HasForms
         /** @var User $user */
         $user = Auth::user();
 
+        $preferredCurrency = $user->getAttribute('preferred_currency');
+
+        if ($preferredCurrency instanceof Currency) {
+            $preferredCurrency = $preferredCurrency->value;
+        }
+
+        if (! is_string($preferredCurrency) || $preferredCurrency === '') {
+            $preferredCurrency = Currency::USD->value;
+        }
+
         $this->getSchema('form')?->fill([
             'name' => $user->name,
             'email' => $user->email,
             'notes' => $user->notes,
+            'preferred_currency' => $preferredCurrency,
         ]);
     }
 
@@ -59,6 +72,11 @@ class Profile extends Page implements HasForms
                     ->rules([
                         Rule::unique(User::class, 'email')->ignore(Auth::id()),
                     ]),
+                Select::make('preferred_currency')
+                    ->label('Preferred Currency')
+                    ->options(Currency::toArray())
+                    ->searchable()
+                    ->required(),
                 Textarea::make('notes')
                     ->rows(4)
                     ->maxLength(5000),
@@ -70,7 +88,7 @@ class Profile extends Page implements HasForms
     {
         /** @var User $user */
         $user = Auth::user();
-        /** @var array{name: string, email: string, notes: ?string} $state */
+        /** @var array{name: string, email: string, preferred_currency: string, notes: ?string} $state */
         $state = $this->getSchema('form')?->getState() ?? [];
 
         $user->update($state);
