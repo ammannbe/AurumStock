@@ -767,7 +767,7 @@ class ProductResource extends Resource
             SelectFilter::make('depository_id')->label('Depository')->options(fn () => Depository::where('user_id', auth()->id())->pluck('name', 'id')),
             SelectFilter::make('year')->options(fn () => Product::query()->distinct()->pluck('year', 'year')->filter()->toArray()),
             SelectFilter::make('price_currency')->label('Purchase Currency')->options(fn () => Product::query()->distinct()->pluck('price_currency', 'price_currency')->filter()->toArray()),
-        ])->defaultSort('name');
+        ])->defaultSort('name')->summaries(pageCondition: false);
     }
 
     public static function getModelLabel(): string
