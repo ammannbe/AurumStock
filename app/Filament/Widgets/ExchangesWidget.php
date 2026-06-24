@@ -24,8 +24,8 @@ class ExchangesWidget extends TableWidget
     {
         return [
             TextColumn::make('currency'),
-            TextColumn::make('value')->getStateUsing(fn ($record) => number_format($record->value, 4)),
-            TextColumn::make('fetched_at')->getStateUsing(fn ($record) => $record->fetched_at ?? $record->updated_at),
+            TextColumn::make('value')->money('usd')->label('Rate'),
+            TextColumn::make('fetched_at')->label('Updated')->isoDate(),
         ];
     }
 }

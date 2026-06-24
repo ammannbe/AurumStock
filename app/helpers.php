@@ -33,19 +33,6 @@ function weight(float|int|null $amount = null, string|false|null $unit = 'g', in
     return str_replace('.000', '', number_format($amount, $decimals, '.', "'"));
 }
 
-function money(float|int|null $amount = null, string|false|null $unit = 'USD', int $decimals = 2): string
-{
-    if ($amount === null) {
-        return emdash();
-    }
-
-    if ($unit) {
-        return $unit.' '.number_format($amount, $decimals, '.', "'");
-    }
-
-    return number_format($amount, $decimals, '.', "'");
-}
-
 function percent(float|int|null $amount = null, bool|string $unit = true, int $decimals = 2): string
 {
     if ($amount === null) {
@@ -66,19 +53,6 @@ function percent(float|int|null $amount = null, bool|string $unit = true, int $d
     }
 
     return $formatted;
-}
-
-function moneyOrPercent(float|int|null $amount = null, ?string $symbol = null, bool $showUnit = true): string
-{
-    if (! $symbol) {
-        $symbol = 'CHF';
-    }
-
-    if ($symbol === '%') {
-        return percent($amount, $showUnit);
-    }
-
-    return money($amount, $showUnit ? $symbol : false);
 }
 
 function formatDate(?Carbon $date = null, string $format = 'L'): ?string

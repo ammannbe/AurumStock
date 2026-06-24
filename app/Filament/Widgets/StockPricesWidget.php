@@ -2,7 +2,6 @@
 
 namespace App\Filament\Widgets;
 
-use App\Enums\Material;
 use App\Models\StockPrice;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Widgets\TableWidget;
@@ -28,8 +27,8 @@ class StockPricesWidget extends TableWidget
                 ->badge()
                 ->getStateUsing(fn ($record) => $record->material->name . ' (' . $record->material->symbol() . ')')
                 ->color(fn ($record) => $record->material->color() ?? null),
-            TextColumn::make('price')->label('USD / oz')->getStateUsing(fn ($record) => number_format($record->price, 2)),
-            TextColumn::make('fetched_at')->label('Fetched At')->getStateUsing(fn ($record) => $record->fetched_at ?? $record->updated_at),
+            TextColumn::make('price')->money('usd')->label('USD / oz'),
+            TextColumn::make('fetched_at')->label('Updated')->isoDate(),
         ];
     }
 }
