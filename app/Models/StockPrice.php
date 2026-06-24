@@ -17,7 +17,17 @@ class StockPrice extends Model
     /** @use HasFactory<StockPriceFactory> */
     use HasFactory;
 
-    protected $fillable = ['material', 'price', 'fetched_at'];
+    protected $fillable = [
+        'material',
+        'price',
+        'fetched_at'
+    ];
+
+    protected $casts = [
+        'material' => Material::class,
+        'price' => 'decimal:6',
+        'fetched_at' => 'datetime',
+    ];
 
     public function histories(): HasMany
     {

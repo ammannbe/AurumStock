@@ -4,7 +4,6 @@ namespace App\Filament\Widgets;
 
 use App\Enums\Material;
 use App\Models\StockPrice;
-use Filament\Tables\Columns\BadgeColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Widgets\TableWidget;
 use Illuminate\Database\Eloquent\Builder;
@@ -25,11 +24,10 @@ class StockPricesWidget extends TableWidget
     protected function getTableColumns(): array
     {
         return [
-            BadgeColumn::make('material')->getStateUsing(function ($record) {
-                $material = Material::tryFrom($record->material);
-
-                return $record->material ? ($material !== null ? $material->name : $record->material) : '-';
-            }),
+            TextColumn::make('material')
+                ->badge()
+                ->getStateUsing(fn ($record) => $record->material->name . ' (' . $record->material->symbol() . ')')
+                ->color(fn ($record) => $record->material->color() ?? null),
             TextColumn::make('price')->label('USD / oz')->getStateUsing(fn ($record) => number_format($record->price, 2)),
             TextColumn::make('fetched_at')->label('Fetched At')->getStateUsing(fn ($record) => $record->fetched_at ?? $record->updated_at),
         ];
