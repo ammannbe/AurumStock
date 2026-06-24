@@ -10,8 +10,8 @@ enum WeightUnit: int
     public function label(): string
     {
         return match ($this) {
-            self::Gram => 'Gram',
-            self::TroyOunce => 'Troy Ounce',
+            self::Gram => __('Gram'),
+            self::TroyOunce => __('Troy Ounce'),
         };
     }
 

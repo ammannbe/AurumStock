@@ -15,24 +15,34 @@ class ExchangeResource extends Resource
 
     protected static \BackedEnum|string|null $navigationIcon = 'heroicon-o-sparkles';
 
-    protected static ?string $navigationLabel = 'Exchanges';
+    protected static ?string $navigationLabel = null;
 
-    protected static \UnitEnum|string|null $navigationGroup = 'Management';
+    protected static \UnitEnum|string|null $navigationGroup = null;
+
+    public static function getNavigationLabel(): string
+    {
+        return __('Exchanges');
+    }
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('Management');
+    }
 
     public static function form(Schema $schema): Schema
     {
         return $schema->schema([
-            TextInput::make('currency')->maxLength(3)->required(),
-            TextInput::make('value')->numeric()->required(),
+            TextInput::make('currency')->label(__('Currency'))->maxLength(3)->required(),
+            TextInput::make('value')->label(__('Value'))->numeric()->required(),
         ]);
     }
 
     public static function table(Table $table): Table
     {
         return $table->columns([
-            TextColumn::make('currency'),
-            TextColumn::make('value'),
-            TextColumn::make('fetched_at'),
+            TextColumn::make('currency')->label(__('Currency')),
+            TextColumn::make('value')->label(__('Value')),
+            TextColumn::make('fetched_at')->label(__('Updated')),
         ]);
     }
 }

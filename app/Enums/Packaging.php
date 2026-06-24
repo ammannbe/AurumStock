@@ -23,11 +23,11 @@ enum Packaging: string
     public function label(): string
     {
         return match ($this) {
-            self::Blister => 'Blister',
-            self::Sealed => 'Sealed',
-            self::Tube => 'Tube',
-            self::CoinCapsule => 'Coin Capsule',
-            self::PresentationCase => 'Presentation Case',
+            self::Blister => __('Blister'),
+            self::Sealed => __('Sealed'),
+            self::Tube => __('Tube'),
+            self::CoinCapsule => __('Coin Capsule'),
+            self::PresentationCase => __('Presentation Case'),
         };
     }
 }

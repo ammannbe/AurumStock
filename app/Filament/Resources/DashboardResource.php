@@ -12,9 +12,19 @@ class DashboardResource extends Resource
 
     protected static \BackedEnum|string|null $navigationIcon = 'heroicon-o-home';
 
-    protected static ?string $navigationLabel = 'Dashboard';
+    protected static ?string $navigationLabel = null;
 
-    protected static \UnitEnum|string|null $navigationGroup = 'User';
+    protected static \UnitEnum|string|null $navigationGroup = null;
+
+    public static function getNavigationLabel(): string
+    {
+        return __('Dashboard');
+    }
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('User');
+    }
 
     public static function getPages(): array
     {

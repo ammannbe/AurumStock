@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Enums\Material;
 use App\Models\StockPrice;
 use App\Models\StockPriceHistory;
 use Filament\Forms\Components\Select;
@@ -17,24 +18,39 @@ class StockPriceResource extends Resource
 
     protected static \BackedEnum|string|null $navigationIcon = 'heroicon-o-trending-up';
 
-    protected static ?string $navigationLabel = 'Stock Prices';
+    protected static ?string $navigationLabel = null;
 
-    protected static \UnitEnum|string|null $navigationGroup = 'Management';
+    protected static \UnitEnum|string|null $navigationGroup = null;
+
+    public static function getNavigationLabel(): string
+    {
+        return __('Stock Prices');
+    }
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('Management');
+    }
 
     public static function form(Schema $schema): Schema
     {
         return $schema->schema([
-            Select::make('material')->options([1 => 'Gold', 2 => 'Silver', 3 => 'Platinum', 4 => 'Palladium'])->required(),
-            TextInput::make('price')->numeric()->required(),
+            Select::make('material')->label(__('Material'))->options([
+                Material::Gold->value => Material::Gold->label(),
+                Material::Silver->value => Material::Silver->label(),
+                Material::Platinum->value => Material::Platinum->label(),
+                Material::Palladium->value => Material::Palladium->label(),
+            ])->required(),
+            TextInput::make('price')->label(__('Price'))->numeric()->required(),
         ]);
     }
 
     public static function table(Table $table): Table
     {
         return $table->columns([
-            TextColumn::make('material'),
-            TextColumn::make('price'),
-            TextColumn::make('fetched_at'),
+            TextColumn::make('material')->label(__('Material'))->formatStateUsing(fn ($state) => Material::from((int) $state)->label()),
+            TextColumn::make('price')->label(__('Price')),
+            TextColumn::make('fetched_at')->label(__('Updated')),
         ]);
     }
 

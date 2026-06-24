@@ -10,8 +10,8 @@ enum Quality: string
     public function label(): string
     {
         return match ($this) {
-            self::Proof => 'Proof',
-            self::Standard => 'Standard',
+            self::Proof => __('Proof'),
+            self::Standard => __('Standard'),
         };
     }
 }

@@ -10,7 +10,12 @@ use Illuminate\Database\Eloquent\Relations\Relation;
 
 class ExchangesWidget extends TableWidget
 {
-    protected static ?string $heading = 'Exchange Rates';
+    protected static ?string $heading = null;
+
+    public function getHeading(): ?string
+    {
+        return __('Exchange Rates');
+    }
 
     /**
      * @return Builder<Exchange>|null
@@ -24,8 +29,8 @@ class ExchangesWidget extends TableWidget
     {
         return [
             TextColumn::make('currency'),
-            TextColumn::make('value')->money('usd')->label('Rate'),
-            TextColumn::make('fetched_at')->label('Updated')->isoDate(),
+            TextColumn::make('value')->money('usd')->label(__('Rate')),
+            TextColumn::make('fetched_at')->label(__('Updated'))->isoDate(),
         ];
     }
 }

@@ -37,6 +37,16 @@ enum Material: int
         };
     }
 
+    public function label(): string
+    {
+        return match ($this) {
+            self::Gold => __('Gold'),
+            self::Silver => __('Silver'),
+            self::Platinum => __('Platinum'),
+            self::Palladium => __('Palladium'),
+        };
+    }
+
     public function color(): string
     {
         return match ($this) {

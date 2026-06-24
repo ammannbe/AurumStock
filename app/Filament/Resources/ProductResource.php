@@ -48,9 +48,19 @@ class ProductResource extends Resource
 
     protected static BackedEnum|string|null $navigationIcon = 'heroicon-o-cube';
 
-    protected static ?string $navigationLabel = 'Products';
+    protected static ?string $navigationLabel = null;
 
-    protected static \UnitEnum|string|null $navigationGroup = 'Management';
+    protected static \UnitEnum|string|null $navigationGroup = null;
+
+    public static function getNavigationLabel(): string
+    {
+        return __('Products');
+    }
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('Management');
+    }
 
     protected static function preferredCurrencyCode(): string
     {
@@ -92,47 +102,47 @@ class ProductResource extends Resource
             Hidden::make('user_id')->default(fn () => auth()->id()),
             TextInput::make('name')->required()->maxLength(255),
             Select::make('depository_id')
-                ->label('Depository')
+                ->label(__('Depository'))
                 ->options(fn () => Depository::where('user_id', auth()->id())->pluck('name', 'id'))
                 ->searchable()
                 ->required()
                 ->default(fn () => Depository::where('user_id', auth()->id())->first()?->id),
             Select::make('type')
-                ->options(collect(ProductType::cases())->mapWithKeys(fn ($c) => [$c->value => $c->name])->toArray())
+                ->options(collect(ProductType::cases())->mapWithKeys(fn ($c) => [$c->value => $c->label()])->toArray())
                 ->required()
                 ->default(ProductType::Coin->value),
             Select::make('material')
-                ->options(collect(Material::cases())->mapWithKeys(fn ($c) => [$c->value => $c->name])->toArray())
+                ->options(collect(Material::cases())->mapWithKeys(fn ($c) => [$c->value => $c->label()])->toArray())
                 ->required()
                 ->default(Material::Gold->value),
-            TextInput::make('reference_number')->nullable()->label('Reference Number'),
-            TextInput::make('year')->numeric()->nullable()->label('Year'),
+            TextInput::make('reference_number')->nullable()->label(__('Reference Number')),
+            TextInput::make('year')->numeric()->nullable()->label(__('Year')),
 
             // Images & text
             FileUpload::make('front_image_path')
-                ->label('Front Image')
+                ->label(__('Front Image'))
                 ->image()
                 ->directory('products')
                 ->disk('public')
                 ->nullable(),
             FileUpload::make('back_image_path')
-                ->label('Back Image')
+                ->label(__('Back Image'))
                 ->image()
                 ->directory('products')
                 ->disk('public')
                 ->nullable(),
             TextInput::make('text_front')
-                ->label('Text Front')
+                ->label(__('Text Front'))
                 ->nullable()
                 ->maxLength(255),
             TextInput::make('text_back')
-                ->label('Text Back')
+                ->label(__('Text Back'))
                 ->nullable()
                 ->maxLength(255),
 
             // Physical attributes
             TextInput::make('weight')
-                ->label('Weight per Item')
+                ->label(__('Weight per Item'))
                 ->numeric()
                 ->required()
                 ->default(1)
@@ -143,53 +153,53 @@ class ProductResource extends Resource
                 ->required()
                 ->default(WeightUnit::TroyOunce->value),
             Select::make('fineness')
-                ->label('Fineness')
+                ->label(__('Fineness'))
                 ->options(collect(Fineness::cases())->mapWithKeys(fn ($c) => [$c->value => $c->value])->toArray())
                 ->searchable()
                 ->nullable(),
-            TextInput::make('size')->nullable()->label('Size'),
-            TextInput::make('amount')->numeric()->required()->default(1)->minValue(1),
-            TextInput::make('face_value')->nullable()->label('Face Value'),
+            TextInput::make('size')->nullable()->label(__('Size')),
+            TextInput::make('amount')->label(__('Amount'))->numeric()->required()->default(1)->minValue(1),
+            TextInput::make('face_value')->nullable()->label(__('Face Value')),
 
             // Provenance / metadata
             Select::make('quality')
-                ->label('Quality')
+                ->label(__('Quality'))
                 ->options(collect(Quality::cases())->mapWithKeys(fn ($c) => [$c->value => $c->label()])->toArray())
                 ->searchable()
                 ->nullable(),
             Checkbox::make('certificate')
-                ->label('Certificate')
+                ->label(__('Certificate'))
                 ->inline(false),
             Select::make('manufacturer')
-                ->label('Manufacturer')
+                ->label(__('Manufacturer'))
                 ->options(collect(Manufacturer::cases())->mapWithKeys(fn ($c) => [$c->value => $c->label()])->toArray())
                 ->searchable()
                 ->nullable(),
             Select::make('country_of_origin')
-                ->label('Country of Origin')
+                ->label(__('Country of Origin'))
                 ->options([
-                    'CH' => 'Switzerland (CH)',
-                    'DE' => 'Germany (DE)',
-                    'AT' => 'Austria (AT)',
-                    'GB' => 'United Kingdom (GB)',
-                    'US' => 'United States (US)',
-                    'CA' => 'Canada (CA)',
-                    'AU' => 'Australia (AU)',
-                    'ZA' => 'South Africa (ZA)',
-                    'FR' => 'France (FR)',
-                    'RU' => 'Russia (RU)',
-                    'CN' => 'China (CN)',
-                    'MX' => 'Mexico (MX)',
+                    'CH' => __('Switzerland (CH)'),
+                    'DE' => __('Germany (DE)'),
+                    'AT' => __('Austria (AT)'),
+                    'GB' => __('United Kingdom (GB)'),
+                    'US' => __('United States (US)'),
+                    'CA' => __('Canada (CA)'),
+                    'AU' => __('Australia (AU)'),
+                    'ZA' => __('South Africa (ZA)'),
+                    'FR' => __('France (FR)'),
+                    'RU' => __('Russia (RU)'),
+                    'CN' => __('China (CN)'),
+                    'MX' => __('Mexico (MX)'),
                 ])
                 ->searchable()
                 ->nullable(),
             Select::make('packaging')
-                ->label('Packaging')
+                ->label(__('Packaging'))
                 ->options(Packaging::toArray())
                 ->searchable()
                 ->nullable(),
             TextInput::make('mintage')
-                ->label('Mintage')
+                ->label(__('Mintage'))
                 ->numeric()
                 ->nullable()
                 ->minValue(0),
@@ -200,17 +210,17 @@ class ProductResource extends Resource
                 ->nullable()
                 ->minValue(0)
                 ->step(0.01)
-                ->label('Total Purchase Price'),
+                ->label(__('Total Purchase Price')),
             Select::make('price_currency')
-                ->label('Purchase Currency')
+                ->label(__('Purchase Currency'))
                 ->options(Currency::toArray())
                 ->searchable()
                 ->nullable(),
             DatePicker::make('purchase_date')
-                ->label('Purchase Date')
+                ->label(__('Purchase Date'))
                 ->nullable(),
             DatePicker::make('taxed_date')
-                ->label('Taxed Date')
+                ->label(__('Taxed Date'))
                 ->nullable(),
 
             // Notes
@@ -222,13 +232,13 @@ class ProductResource extends Resource
     {
         return $table->columns([
             TextColumn::make('type')
-                ->label('Type')
-                ->formatStateUsing(fn ($state) => ProductType::from($state)->name)
+                ->label(__('Type'))
+                ->formatStateUsing(fn ($state) => ProductType::from((int) $state)->label())
                 ->sortable()
                 ->toggleable(),
-            TextColumn::make('name')->searchable()->label('Name'),
+            TextColumn::make('name')->searchable()->label(__('Name')),
             TextColumn::make('front_image_preview')
-                ->label('Image')
+                ->label(__('Image'))
                 ->html()
                 ->getStateUsing(fn ($record) => (function ($record) {
                     $front = $record->front_image_path ? Storage::disk('public')->url($record->front_image_path) : null;
@@ -263,21 +273,21 @@ class ProductResource extends Resource
                 ->badge()
                 ->icon(fn (Material $state) => $state->icon())
                 ->color(fn (Material $state) => $state->color())
-                ->tooltip(fn (Material $state) => $state->name)
+                ->tooltip(fn (Material $state) => $state->label())
                 ->toggleable(),
             TextColumn::make('weight')
-                ->label('Weight')
+                ->label(__('Weight'))
                 ->numeric()
                 ->suffix(fn (Product $record) => ' '.$record->weight_unit->symbol())
                 ->toggleable(),
             TextColumn::make('weight_total')
-                ->label('Total Weight')
+                ->label(__('Total Weight'))
                 ->numeric()
                 ->suffix(fn (Product $record) => ' '.$record->weight_unit->symbol())
                 ->toggleable()
                 ->summarize([
                     Summarizer::make()
-                        ->label('Gold')
+                        ->label(Material::Gold->label())
                         ->numeric()
                         ->suffix(' '.WeightUnit::Gram->symbol())
                         ->query(fn (Builder $query) => $query->where('material', Material::Gold->value))
@@ -293,7 +303,7 @@ class ProductResource extends Resource
                             });
                         }),
                     Summarizer::make()
-                        ->label('Silver')
+                        ->label(Material::Silver->label())
                         ->numeric()
                         ->suffix(' '.WeightUnit::Gram->symbol())
                         ->query(fn (Builder $query) => $query->where('material', Material::Silver->value))
@@ -309,7 +319,7 @@ class ProductResource extends Resource
                             });
                         }),
                     Summarizer::make()
-                        ->label('Platinum')
+                        ->label(Material::Platinum->label())
                         ->numeric()
                         ->suffix(' '.WeightUnit::Gram->symbol())
                         ->query(fn (Builder $query) => $query->where('material', Material::Platinum->value))
@@ -325,7 +335,7 @@ class ProductResource extends Resource
                             });
                         }),
                     Summarizer::make()
-                        ->label('Palladium')
+                        ->label(Material::Palladium->label())
                         ->numeric()
                         ->suffix(' '.WeightUnit::Gram->symbol())
                         ->query(fn (Builder $query) => $query->where('material', Material::Palladium->value))
@@ -341,7 +351,7 @@ class ProductResource extends Resource
                             });
                         }),
                     Summarizer::make()
-                        ->label('Total')
+                        ->label(__('Total'))
                         ->numeric()
                         ->suffix(' '.WeightUnit::Gram->symbol())
                         ->using(function (Builder $query) {
@@ -357,39 +367,39 @@ class ProductResource extends Resource
                         }),
                 ]),
             TextColumn::make('amount')
-                ->label('Amount')
+                ->label(__('Amount'))
                 ->numeric()
                 ->toggleable()
                 ->summarize([
                     Sum::make()
-                        ->label('Gold')
+                        ->label(Material::Gold->label())
                         ->numeric()
                         ->query(fn (Builder $query) => $query->where('material', Material::Gold->value)),
                     Sum::make()
-                        ->label('Silver')
+                        ->label(Material::Silver->label())
                         ->numeric()
                         ->query(fn (Builder $query) => $query->where('material', Material::Silver->value)),
                     Sum::make()
-                        ->label('Platinum')
+                        ->label(Material::Platinum->label())
                         ->numeric()
                         ->query(fn (Builder $query) => $query->where('material', Material::Platinum->value)),
                     Sum::make()
-                        ->label('Palladium')
+                        ->label(Material::Palladium->label())
                         ->numeric()
                         ->query(fn (Builder $query) => $query->where('material', Material::Palladium->value)),
                     Sum::make()
-                        ->label('Total')
+                        ->label(__('Total'))
                         ->numeric(),
                 ])
                 ->sortable(),
-            TextColumn::make('depository.name')->label('Depository')->sortable()->toggleable(),
+            TextColumn::make('depository.name')->label(__('Depository'))->sortable()->toggleable(),
             TextColumn::make('price')
-                ->label('Purchase Price')
+                ->label(__('Purchase Price'))
                 ->money(fn (Product $record) => $record->price_currency)
                 ->toggleable()
                 ->summarize([
                     Summarizer::make()
-                        ->label('Gold')
+                        ->label(Material::Gold->label())
                         ->numeric()
                         ->money(fn () => static::preferredCurrencyCode())
                         ->query(fn (Builder $query) => $query->where('material', Material::Gold->value))
@@ -410,7 +420,7 @@ class ProductResource extends Resource
                             return static::convertUsdToPreferred($totalUsd);
                         }),
                     Summarizer::make()
-                        ->label('Silver')
+                        ->label(Material::Silver->label())
                         ->numeric()
                         ->money(fn () => static::preferredCurrencyCode())
                         ->query(fn (Builder $query) => $query->where('material', Material::Silver->value))
@@ -431,7 +441,7 @@ class ProductResource extends Resource
                             return static::convertUsdToPreferred($totalUsd);
                         }),
                     Summarizer::make()
-                        ->label('Platinum')
+                        ->label(Material::Platinum->label())
                         ->numeric()
                         ->money(fn () => static::preferredCurrencyCode())
                         ->query(fn (Builder $query) => $query->where('material', Material::Platinum->value))
@@ -452,7 +462,7 @@ class ProductResource extends Resource
                             return static::convertUsdToPreferred($totalUsd);
                         }),
                     Summarizer::make()
-                        ->label('Palladium')
+                        ->label(Material::Palladium->label())
                         ->numeric()
                         ->money(fn () => static::preferredCurrencyCode())
                         ->query(fn (Builder $query) => $query->where('material', Material::Palladium->value))
@@ -473,7 +483,7 @@ class ProductResource extends Resource
                             return static::convertUsdToPreferred($totalUsd);
                         }),
                     Summarizer::make()
-                        ->label('Total')
+                        ->label(__('Total'))
                         ->numeric()
                         ->money(fn () => static::preferredCurrencyCode())
                         ->using(function (Builder $query) {
@@ -494,14 +504,14 @@ class ProductResource extends Resource
                         }),
                 ]),
             TextColumn::make('material_value_total')
-                ->label('Material Value')
+                ->label(__('Material Value'))
                 ->getStateUsing(fn (Product $record) => static::convertUsdToPreferred($record->material_value_total))
                 ->money(fn () => static::preferredCurrencyCode())
                 ->sortable()
                 ->toggleable()
                 ->summarize([
                     Summarizer::make()
-                        ->label('Gold')
+                        ->label(Material::Gold->label())
                         ->numeric()
                         ->money(fn () => static::preferredCurrencyCode())
                         ->query(fn (Builder $query) => $query->where('material', Material::Gold->value))
@@ -518,7 +528,7 @@ class ProductResource extends Resource
                             return static::convertUsdToPreferred($totalMaterialUsd);
                         }),
                     Summarizer::make()
-                        ->label('Silver')
+                        ->label(Material::Silver->label())
                         ->numeric()
                         ->money(fn () => static::preferredCurrencyCode())
                         ->query(fn (Builder $query) => $query->where('material', Material::Silver->value))
@@ -535,7 +545,7 @@ class ProductResource extends Resource
                             return static::convertUsdToPreferred($totalMaterialUsd);
                         }),
                     Summarizer::make()
-                        ->label('Platinum')
+                        ->label(Material::Platinum->label())
                         ->numeric()
                         ->money(fn () => static::preferredCurrencyCode())
                         ->query(fn (Builder $query) => $query->where('material', Material::Platinum->value))
@@ -552,7 +562,7 @@ class ProductResource extends Resource
                             return static::convertUsdToPreferred($totalMaterialUsd);
                         }),
                     Summarizer::make()
-                        ->label('Palladium')
+                        ->label(Material::Palladium->label())
                         ->numeric()
                         ->money(fn () => static::preferredCurrencyCode())
                         ->query(fn (Builder $query) => $query->where('material', Material::Palladium->value))
@@ -569,7 +579,7 @@ class ProductResource extends Resource
                             return static::convertUsdToPreferred($totalMaterialUsd);
                         }),
                     Summarizer::make()
-                        ->label('Total')
+                        ->label(__('Total'))
                         ->numeric()
                         ->money(fn () => static::preferredCurrencyCode())
                         ->using(function (Builder $query) {
@@ -591,13 +601,13 @@ class ProductResource extends Resource
                         }),
                 ]),
             TextColumn::make('price_trend')
-                ->label('Price Trend')
+                ->label(__('Price Trend'))
                 ->numeric(decimalPlaces: 0)
                 ->suffix(' %')
                 ->toggleable()
                 ->summarize([
                     Summarizer::make()
-                        ->label('Gold')
+                        ->label(Material::Gold->label())
                         ->numeric()
                         ->suffix(' %')
                         ->query(fn (Builder $query) => $query->where('material', Material::Gold->value))
@@ -626,7 +636,7 @@ class ProductResource extends Resource
                             return ($totalMaterialUsd - $totalPurchaseUsd) / $totalPurchaseUsd * 100;
                         }),
                     Summarizer::make()
-                        ->label('Silver')
+                        ->label(Material::Silver->label())
                         ->numeric()
                         ->suffix(' %')
                         ->query(fn (Builder $query) => $query->where('material', Material::Silver->value))
@@ -655,7 +665,7 @@ class ProductResource extends Resource
                             return ($totalMaterialUsd - $totalPurchaseUsd) / $totalPurchaseUsd * 100;
                         }),
                     Summarizer::make()
-                        ->label('Platinum')
+                        ->label(Material::Platinum->label())
                         ->numeric()
                         ->suffix(' %')
                         ->query(fn (Builder $query) => $query->where('material', Material::Platinum->value))
@@ -684,7 +694,7 @@ class ProductResource extends Resource
                             return ($totalMaterialUsd - $totalPurchaseUsd) / $totalPurchaseUsd * 100;
                         }),
                     Summarizer::make()
-                        ->label('Palladium')
+                        ->label(Material::Palladium->label())
                         ->numeric()
                         ->suffix(' %')
                         ->query(fn (Builder $query) => $query->where('material', Material::Palladium->value))
@@ -713,7 +723,7 @@ class ProductResource extends Resource
                             return ($totalMaterialUsd - $totalPurchaseUsd) / $totalPurchaseUsd * 100;
                         }),
                     Summarizer::make()
-                        ->label('Total')
+                        ->label(__('Total'))
                         ->numeric()
                         ->suffix(' %')
                         ->using(function (Builder $query) {
@@ -740,34 +750,34 @@ class ProductResource extends Resource
                             return ($totalMaterialUsd - $totalPurchaseUsd) / $totalPurchaseUsd * 100;
                         }),
                 ]),
-            TextColumn::make('year')->label('Year')->sortable()->toggleable(),
+            TextColumn::make('year')->label(__('Year'))->sortable()->toggleable(),
 
-            TextColumn::make('text_front')->label('Text Front')->limit(30)->toggleable(isToggledHiddenByDefault: true),
-            TextColumn::make('text_back')->label('Text Back')->limit(30)->toggleable(isToggledHiddenByDefault: true),
+            TextColumn::make('text_front')->label(__('Text Front'))->limit(30)->toggleable(isToggledHiddenByDefault: true),
+            TextColumn::make('text_back')->label(__('Text Back'))->limit(30)->toggleable(isToggledHiddenByDefault: true),
             TextColumn::make('quality')
-                ->label('Quality')
+                ->label(__('Quality'))
                 ->getStateUsing(fn ($record) => $record->quality ? Quality::from($record->quality)->label() : '-')
                 ->toggleable(isToggledHiddenByDefault: true),
             IconColumn::make('certificate')
-                ->label('Certificate')
+                ->label(__('Certificate'))
                 ->boolean()
                 ->toggleable(isToggledHiddenByDefault: true),
             TextColumn::make('manufacturer')
-                ->label('Manufacturer')
+                ->label(__('Manufacturer'))
                 ->getStateUsing(fn ($record) => $record->manufacturer ? Manufacturer::from($record->manufacturer)->label() : '-')
                 ->toggleable(isToggledHiddenByDefault: true),
-            TextColumn::make('country_of_origin')->label('Country')->toggleable(isToggledHiddenByDefault: true),
-            TextColumn::make('fineness')->label('Fineness')->toggleable(isToggledHiddenByDefault: true),
+            TextColumn::make('country_of_origin')->label(__('Country'))->toggleable(isToggledHiddenByDefault: true),
+            TextColumn::make('fineness')->label(__('Fineness'))->toggleable(isToggledHiddenByDefault: true),
             TextColumn::make('packaging')
-                ->label('Packaging')
+                ->label(__('Packaging'))
                 ->getStateUsing(fn ($record) => $record->packaging ? Packaging::from($record->packaging)->label() : '-')
                 ->toggleable(isToggledHiddenByDefault: true),
-            TextColumn::make('mintage')->label('Mintage')->numeric()->toggleable(isToggledHiddenByDefault: true),
-            TextColumn::make('purchase_date')->label('Purchase Date')->date()->toggleable(isToggledHiddenByDefault: true),
-            TextColumn::make('taxed_date')->label('Taxed Date')->date()->toggleable(isToggledHiddenByDefault: true),
+            TextColumn::make('mintage')->label(__('Mintage'))->numeric()->toggleable(isToggledHiddenByDefault: true),
+            TextColumn::make('purchase_date')->label(__('Purchase Date'))->isoDate()->toggleable(isToggledHiddenByDefault: true),
+            TextColumn::make('taxed_date')->label(__('Taxed Date'))->isoDate()->toggleable(isToggledHiddenByDefault: true),
 
             IconColumn::make('notes')
-                ->label('Notes')
+                ->label(__('Notes'))
                 ->getStateUsing(fn ($record) => (bool) $record->notes)
                 ->boolean()
                 ->trueIcon('heroicon-o-document-text')
@@ -781,17 +791,17 @@ class ProductResource extends Resource
         ])->toolbarActions([
             DeleteBulkAction::make(),
         ])->filters([
-            SelectFilter::make('material')->options(collect(Material::cases())->mapWithKeys(fn ($c) => [$c->value => $c->name])->toArray()),
-            SelectFilter::make('type')->options(collect(ProductType::cases())->mapWithKeys(fn ($c) => [$c->value => $c->name])->toArray()),
-            SelectFilter::make('depository_id')->label('Depository')->options(fn () => Depository::where('user_id', auth()->id())->pluck('name', 'id')),
+            SelectFilter::make('material')->options(collect(Material::cases())->mapWithKeys(fn ($c) => [$c->value => $c->label()])->toArray()),
+            SelectFilter::make('type')->options(collect(ProductType::cases())->mapWithKeys(fn ($c) => [$c->value => $c->label()])->toArray()),
+            SelectFilter::make('depository_id')->label(__('Depository'))->options(fn () => Depository::where('user_id', auth()->id())->pluck('name', 'id')),
             SelectFilter::make('year')->options(fn () => Product::query()->distinct()->pluck('year', 'year')->filter()->toArray()),
-            SelectFilter::make('price_currency')->label('Purchase Currency')->options(fn () => Product::query()->distinct()->pluck('price_currency', 'price_currency')->filter()->toArray()),
+            SelectFilter::make('price_currency')->label(__('Purchase Currency'))->options(fn () => Product::query()->distinct()->pluck('price_currency', 'price_currency')->filter()->toArray()),
         ])->defaultSort('name')->summaries(pageCondition: false);
     }
 
     public static function getModelLabel(): string
     {
-        return 'Product';
+        return __('Product');
     }
 
     public static function getPages(): array

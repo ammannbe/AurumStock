@@ -10,7 +10,12 @@ use Illuminate\Database\Eloquent\Relations\Relation;
 
 class StockPricesWidget extends TableWidget
 {
-    protected static ?string $heading = 'Stock Prices';
+    protected static ?string $heading = null;
+
+    public function getHeading(): ?string
+    {
+        return __('Stock Prices');
+    }
 
     /**
      * @return Builder<StockPrice>|null
@@ -25,11 +30,11 @@ class StockPricesWidget extends TableWidget
         return [
             TextColumn::make('material')
                 ->badge()
-                ->getStateUsing(fn ($record) => $record->material->name.' ('.$record->material->symbol().')')
+                ->getStateUsing(fn ($record) => $record->material->label().' ('.$record->material->symbol().')')
                 ->color(fn ($record) => $record->material->color() ?? null)
                 ->icon(fn ($record) => $record->material->icon() ?? null),
-            TextColumn::make('price')->money('usd')->label('USD / oz'),
-            TextColumn::make('fetched_at')->label('Updated')->isoDate(),
+            TextColumn::make('price')->money('usd')->label(__('USD / oz')),
+            TextColumn::make('fetched_at')->label(__('Updated'))->isoDate(),
         ];
     }
 }

@@ -41,7 +41,7 @@ class Dashboard extends Page
 
         $this->stockPrices = StockPrice::query()->limit(10)->get()->map(function ($p) use ($format) {
             return [
-                'material' => $p->material->name,
+                'material' => $p->material->label(),
                 'price' => number_format((float) $p->price, 4),
                 'fetched_at' => $format($p->fetched_at ?? $p->updated_at),
             ];

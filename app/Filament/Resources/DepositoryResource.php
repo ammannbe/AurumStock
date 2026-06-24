@@ -24,24 +24,34 @@ class DepositoryResource extends Resource
 
     protected static BackedEnum|string|null $navigationIcon = 'heroicon-o-home';
 
-    protected static ?string $navigationLabel = 'Depositories';
+    protected static ?string $navigationLabel = null;
 
-    protected static \UnitEnum|string|null $navigationGroup = 'Management';
+    protected static \UnitEnum|string|null $navigationGroup = null;
+
+    public static function getNavigationLabel(): string
+    {
+        return __('Depositories');
+    }
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('Management');
+    }
 
     public static function form(Schema $schema): Schema
     {
         return $schema->schema([
             Hidden::make('user_id')->default(fn () => auth()->id()),
-            TextInput::make('name')->required()->maxLength(255)->columnSpanFull()->maxWidth('xl'),
-            Textarea::make('description')->nullable()->columnSpanFull()->maxWidth('xl'),
+            TextInput::make('name')->label(__('Name'))->required()->maxLength(255)->columnSpanFull()->maxWidth('xl'),
+            Textarea::make('description')->label(__('Description'))->nullable()->columnSpanFull()->maxWidth('xl'),
         ]);
     }
 
     public static function table(Table $table): Table
     {
         return $table->columns([
-            TextColumn::make('name')->searchable(),
-            TextColumn::make('description')->limit(50),
+            TextColumn::make('name')->label(__('Name'))->searchable(),
+            TextColumn::make('description')->label(__('Description'))->limit(50),
         ])->recordActions([
             EditAction::make()->color('secondary'),
             DeleteAction::make(),

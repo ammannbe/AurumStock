@@ -22,9 +22,9 @@ class Profile extends Page implements HasForms
 
     protected static BackedEnum|string|null $navigationIcon = 'heroicon-o-user';
 
-    protected static ?string $navigationLabel = 'Profile';
+    protected static ?string $navigationLabel = null;
 
-    protected static \UnitEnum|string|null $navigationGroup = 'Account';
+    protected static \UnitEnum|string|null $navigationGroup = null;
 
     protected static ?string $slug = 'profile';
 
@@ -34,6 +34,16 @@ class Profile extends Page implements HasForms
      * @var array<string, mixed>|null
      */
     public ?array $data = [];
+
+    public static function getNavigationLabel(): string
+    {
+        return __('Profile');
+    }
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('Account');
+    }
 
     public function mount(): void
     {
@@ -50,11 +60,14 @@ class Profile extends Page implements HasForms
             $preferredCurrency = Currency::USD->value;
         }
 
+        $preferredLocale = $user->preferredLocale();
+
         $this->getSchema('form')?->fill([
             'name' => $user->name,
             'email' => $user->email,
             'notes' => $user->notes,
             'preferred_currency' => $preferredCurrency,
+            'preferred_locale' => $preferredLocale,
         ]);
     }
 
@@ -73,9 +86,16 @@ class Profile extends Page implements HasForms
                         Rule::unique(User::class, 'email')->ignore(Auth::id()),
                     ]),
                 Select::make('preferred_currency')
-                    ->label('Preferred Currency')
+                    ->label(__('Preferred Currency'))
                     ->options(Currency::toArray())
                     ->searchable()
+                    ->required(),
+                Select::make('preferred_locale')
+                    ->label(__('Language'))
+                    ->options([
+                        'en' => __('English'),
+                        'de' => __('German'),
+                    ])
                     ->required(),
                 Textarea::make('notes')
                     ->rows(4)
@@ -88,13 +108,13 @@ class Profile extends Page implements HasForms
     {
         /** @var User $user */
         $user = Auth::user();
-        /** @var array{name: string, email: string, preferred_currency: string, notes: ?string} $state */
+        /** @var array{name: string, email: string, preferred_currency: string, preferred_locale: string, notes: ?string} $state */
         $state = $this->getSchema('form')?->getState() ?? [];
 
         $user->update($state);
 
         Notification::make()
-            ->title('Profile updated')
+            ->title(__('Profile updated'))
             ->success()
             ->send();
     }

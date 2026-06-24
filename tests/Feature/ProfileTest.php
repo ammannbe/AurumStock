@@ -27,6 +27,7 @@ test('profile information can be updated', function () {
         ->set('data.name', 'Test User')
         ->set('data.email', 'test@example.com')
         ->set('data.preferred_currency', Currency::EUR->value)
+        ->set('data.preferred_locale', 'de')
         ->set('data.notes', 'Updated notes from profile page')
         ->call('save')
         ->assertHasNoErrors();
@@ -36,5 +37,6 @@ test('profile information can be updated', function () {
     $this->assertSame('Test User', $user->name);
     $this->assertSame('test@example.com', $user->email);
     $this->assertSame(Currency::EUR, $user->preferred_currency);
+    $this->assertSame('de', $user->preferred_locale);
     $this->assertSame('Updated notes from profile page', $user->notes);
 });

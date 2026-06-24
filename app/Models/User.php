@@ -7,6 +7,7 @@ use App\Enums\Currency;
 use Database\Factories\UserFactory;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
+use Illuminate\Contracts\Translation\HasLocalePreference;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -17,9 +18,9 @@ use Illuminate\Notifications\Notifiable;
 /**
  * @method static \Database\Factories\UserFactory factory(...$parameters)
  */
-#[Fillable(['name', 'email', 'password', 'notes', 'two_factor_enabled', 'passkey_enabled', 'preferred_currency'])]
+#[Fillable(['name', 'email', 'password', 'notes', 'two_factor_enabled', 'passkey_enabled', 'preferred_currency', 'preferred_locale'])]
 #[Hidden(['password', 'remember_token'])]
-class User extends Authenticatable implements FilamentUser
+class User extends Authenticatable implements FilamentUser, HasLocalePreference
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
@@ -31,6 +32,17 @@ class User extends Authenticatable implements FilamentUser
         'passkey_enabled' => 'boolean',
         'preferred_currency' => Currency::class,
     ];
+
+    public function preferredLocale(): string
+    {
+        $locale = $this->getAttribute('preferred_locale');
+
+        if (is_string($locale) && $locale !== '') {
+            return $locale;
+        }
+
+        return config('app.locale', 'en');
+    }
 
     public function products(): HasMany
     {
