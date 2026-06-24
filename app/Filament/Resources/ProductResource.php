@@ -94,6 +94,7 @@ class ProductResource extends Resource
 
             // Physical attributes
             TextInput::make('weight')
+                ->label('Weight per Item')
                 ->numeric()
                 ->required()
                 ->default(1)
@@ -161,7 +162,7 @@ class ProductResource extends Resource
                 ->nullable()
                 ->minValue(0)
                 ->step(0.01)
-                ->label('Purchase Price'),
+                ->label('Total Purchase Price'),
             Select::make('price_currency')
                 ->label('Purchase Currency')
                 ->options(Currency::toArray())
@@ -340,9 +341,9 @@ class ProductResource extends Resource
                 ->money(fn (Product $record) => $record->price_currency)
                 ->summarize([
                     Summarizer::make()
-                        ->label('Ø Gold')
+                        ->label('Gold')
                         ->numeric()
-                        ->suffix(' $/g')
+                        ->money('usd')
                         ->query(fn (Builder $query) => $query->where('material', Material::Gold->value))
                         ->using(function (Builder $query) {
                             $ids = $query->pluck('id')->filter()->toArray();
@@ -355,18 +356,15 @@ class ProductResource extends Resource
                                 $exchangeValue = (float) ($p->exchange?->getAttribute('value') ?? 0);
                                 $priceInUSD = ($price && $exchangeValue > 0) ? $price / $exchangeValue : 0;
 
-                                return $priceInUSD;
-                            });
-                            $totalGrams = $products->sum(function (Product $p) {
-                                return $p->weight_unit->toGram($p->weight) * ($p->amount ?? 1);
+                                return $priceInUSD * ($p->amount ?? 1);
                             });
 
-                            return $totalGrams > 0 ? $totalUsd / $totalGrams : 0;
+                            return $totalUsd;
                         }),
                     Summarizer::make()
-                        ->label('Ø Silver')
+                        ->label('Silver')
                         ->numeric()
-                        ->suffix(' $/g')
+                        ->money('usd')
                         ->query(fn (Builder $query) => $query->where('material', Material::Silver->value))
                         ->using(function (Builder $query) {
                             $ids = $query->pluck('id')->filter()->toArray();
@@ -379,18 +377,15 @@ class ProductResource extends Resource
                                 $exchangeValue = (float) ($p->exchange?->getAttribute('value') ?? 0);
                                 $priceInUSD = ($price && $exchangeValue > 0) ? $price / $exchangeValue : 0;
 
-                                return $priceInUSD;
-                            });
-                            $totalGrams = $products->sum(function (Product $p) {
-                                return $p->weight_unit->toGram($p->weight) * ($p->amount ?? 1);
+                                return $priceInUSD * ($p->amount ?? 1);
                             });
 
-                            return $totalGrams > 0 ? $totalUsd / $totalGrams : 0;
+                            return $totalUsd;
                         }),
                     Summarizer::make()
-                        ->label('Ø Platinum')
+                        ->label('Platinum')
                         ->numeric()
-                        ->suffix(' $/g')
+                        ->money('usd')
                         ->query(fn (Builder $query) => $query->where('material', Material::Platinum->value))
                         ->using(function (Builder $query) {
                             $ids = $query->pluck('id')->filter()->toArray();
@@ -403,18 +398,15 @@ class ProductResource extends Resource
                                 $exchangeValue = (float) ($p->exchange?->getAttribute('value') ?? 0);
                                 $priceInUSD = ($price && $exchangeValue > 0) ? $price / $exchangeValue : 0;
 
-                                return $priceInUSD;
-                            });
-                            $totalGrams = $products->sum(function (Product $p) {
-                                return $p->weight_unit->toGram($p->weight) * ($p->amount ?? 1);
+                                return $priceInUSD * ($p->amount ?? 1);
                             });
 
-                            return $totalGrams > 0 ? $totalUsd / $totalGrams : 0;
+                            return $totalUsd;
                         }),
                     Summarizer::make()
-                        ->label('Ø Palladium')
+                        ->label('Palladium')
                         ->numeric()
-                        ->suffix(' $/g')
+                        ->money('usd')
                         ->query(fn (Builder $query) => $query->where('material', Material::Palladium->value))
                         ->using(function (Builder $query) {
                             $ids = $query->pluck('id')->filter()->toArray();
@@ -427,18 +419,15 @@ class ProductResource extends Resource
                                 $exchangeValue = (float) ($p->exchange?->getAttribute('value') ?? 0);
                                 $priceInUSD = ($price && $exchangeValue > 0) ? $price / $exchangeValue : 0;
 
-                                return $priceInUSD;
-                            });
-                            $totalGrams = $products->sum(function (Product $p) {
-                                return $p->weight_unit->toGram($p->weight) * ($p->amount ?? 1);
+                                return $priceInUSD * ($p->amount ?? 1);
                             });
 
-                            return $totalGrams > 0 ? $totalUsd / $totalGrams : 0;
+                            return $totalUsd;
                         }),
                     Summarizer::make()
-                        ->label('Ø Total')
+                        ->label('Total')
                         ->numeric()
-                        ->suffix(' $/g')
+                        ->money('usd')
                         ->using(function (Builder $query) {
                             $ids = $query->pluck('id')->filter()->toArray();
                             if (empty($ids)) {
@@ -450,13 +439,10 @@ class ProductResource extends Resource
                                 $exchangeValue = (float) ($p->exchange?->getAttribute('value') ?? 0);
                                 $priceInUSD = ($price && $exchangeValue > 0) ? $price / $exchangeValue : 0;
 
-                                return $priceInUSD;
-                            });
-                            $totalGrams = $products->sum(function (Product $p) {
-                                return $p->weight_unit->toGram($p->weight) * ($p->amount ?? 1);
+                                return $priceInUSD * ($p->amount ?? 1);
                             });
 
-                            return $totalGrams > 0 ? $totalUsd / $totalGrams : 0;
+                            return $totalUsd;
                         }),
                 ]),
             TextColumn::make('material_value_total')
@@ -467,7 +453,7 @@ class ProductResource extends Resource
                     Summarizer::make()
                         ->label('Gold')
                         ->numeric()
-                        ->suffix(' $/g')
+                        ->money('usd')
                         ->query(fn (Builder $query) => $query->where('material', Material::Gold->value))
                         ->using(function (Builder $query) {
                             $ids = $query->pluck('id')->filter()->toArray();
@@ -476,18 +462,15 @@ class ProductResource extends Resource
                             }
                             $products = Product::with(['exchange', 'stockPrice'])->whereIn('id', $ids)->get();
                             $totalMaterialUsd = $products->sum(function (Product $p) {
-                                return $p->material_value ?? 0;
-                            });
-                            $totalGrams = $products->sum(function (Product $p) {
-                                return $p->weight_unit->toGram($p->weight);
+                                return $p->material_value_total ?? 0;
                             });
 
-                            return $totalGrams > 0 ? $totalMaterialUsd / $totalGrams : 0;
+                            return $totalMaterialUsd;
                         }),
                     Summarizer::make()
                         ->label('Silver')
                         ->numeric()
-                        ->suffix(' $/g')
+                        ->money('usd')
                         ->query(fn (Builder $query) => $query->where('material', Material::Silver->value))
                         ->using(function (Builder $query) {
                             $ids = $query->pluck('id')->filter()->toArray();
@@ -496,18 +479,15 @@ class ProductResource extends Resource
                             }
                             $products = Product::with(['exchange', 'stockPrice'])->whereIn('id', $ids)->get();
                             $totalMaterialUsd = $products->sum(function (Product $p) {
-                                return $p->material_value ?? 0;
-                            });
-                            $totalGrams = $products->sum(function (Product $p) {
-                                return $p->weight_unit->toGram($p->weight);
+                                return $p->material_value_total ?? 0;
                             });
 
-                            return $totalGrams > 0 ? $totalMaterialUsd / $totalGrams : 0;
+                            return $totalMaterialUsd;
                         }),
                     Summarizer::make()
                         ->label('Platinum')
                         ->numeric()
-                        ->suffix(' $/g')
+                        ->money('usd')
                         ->query(fn (Builder $query) => $query->where('material', Material::Platinum->value))
                         ->using(function (Builder $query) {
                             $ids = $query->pluck('id')->filter()->toArray();
@@ -516,18 +496,15 @@ class ProductResource extends Resource
                             }
                             $products = Product::with(['exchange', 'stockPrice'])->whereIn('id', $ids)->get();
                             $totalMaterialUsd = $products->sum(function (Product $p) {
-                                return $p->material_value ?? 0;
-                            });
-                            $totalGrams = $products->sum(function (Product $p) {
-                                return $p->weight_unit->toGram($p->weight);
+                                return $p->material_value_total ?? 0;
                             });
 
-                            return $totalGrams > 0 ? $totalMaterialUsd / $totalGrams : 0;
+                            return $totalMaterialUsd;
                         }),
                     Summarizer::make()
                         ->label('Palladium')
                         ->numeric()
-                        ->suffix(' $/g')
+                        ->money('usd')
                         ->query(fn (Builder $query) => $query->where('material', Material::Palladium->value))
                         ->using(function (Builder $query) {
                             $ids = $query->pluck('id')->filter()->toArray();
@@ -536,18 +513,15 @@ class ProductResource extends Resource
                             }
                             $products = Product::with(['exchange', 'stockPrice'])->whereIn('id', $ids)->get();
                             $totalMaterialUsd = $products->sum(function (Product $p) {
-                                return $p->material_value ?? 0;
-                            });
-                            $totalGrams = $products->sum(function (Product $p) {
-                                return $p->weight_unit->toGram($p->weight);
+                                return $p->material_value_total ?? 0;
                             });
 
-                            return $totalGrams > 0 ? $totalMaterialUsd / $totalGrams : 0;
+                            return $totalMaterialUsd;
                         }),
                     Summarizer::make()
                         ->label('Total')
                         ->numeric()
-                        ->suffix(' $/g')
+                        ->money('usd')
                         ->using(function (Builder $query) {
                             $ids = $query->pluck('id')->filter()->toArray();
 
@@ -563,13 +537,7 @@ class ProductResource extends Resource
                                 return $p->material_value_total ?? 0;
                             });
 
-                            $totalGrams = $products->sum(function (Product $p) {
-                                return $p->weight_unit->toGram($p->weight) * ($p->amount ?? 1);
-                            });
-
-                            return $totalGrams > 0
-                                ? $totalMaterialUsd / $totalGrams
-                                : 0;
+                            return $totalMaterialUsd;
                         }),
                 ]),
             TextColumn::make('price_trend')
