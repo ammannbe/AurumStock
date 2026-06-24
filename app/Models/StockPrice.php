@@ -20,7 +20,7 @@ class StockPrice extends Model
     protected $fillable = [
         'material',
         'price',
-        'fetched_at'
+        'fetched_at',
     ];
 
     protected $casts = [

@@ -32,8 +32,8 @@ class DepositoryResource extends Resource
     {
         return $schema->schema([
             Hidden::make('user_id')->default(fn () => auth()->id()),
-            TextInput::make('name')->required()->maxLength(255),
-            Textarea::make('description')->nullable(),
+            TextInput::make('name')->required()->maxLength(255)->columnSpanFull()->maxWidth('xl'),
+            Textarea::make('description')->nullable()->columnSpanFull()->maxWidth('xl'),
         ]);
     }
 
@@ -42,10 +42,10 @@ class DepositoryResource extends Resource
         return $table->columns([
             TextColumn::make('name')->searchable(),
             TextColumn::make('description')->limit(50),
-        ])->actions([
+        ])->recordActions([
             EditAction::make()->color('secondary'),
             DeleteAction::make(),
-        ])->bulkActions([
+        ])->toolbarActions([
             DeleteBulkAction::make(),
         ])->defaultSort('name');
     }

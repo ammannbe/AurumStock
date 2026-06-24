@@ -175,7 +175,7 @@ class ProductResource extends Resource
                 ->nullable(),
 
             // Notes
-            Textarea::make('notes')->nullable()->columnSpan('full'),
+            Textarea::make('notes')->nullable()->columnSpanFull(),
         ]);
     }
 
@@ -544,33 +544,33 @@ class ProductResource extends Resource
 
                             return $totalGrams > 0 ? $totalMaterialUsd / $totalGrams : 0;
                         }),
-                Summarizer::make()
-                    ->label('Total')
-                    ->numeric()
-                    ->suffix(' $/g')
-                    ->using(function (Builder $query) {
-                        $ids = $query->pluck('id')->filter()->toArray();
+                    Summarizer::make()
+                        ->label('Total')
+                        ->numeric()
+                        ->suffix(' $/g')
+                        ->using(function (Builder $query) {
+                            $ids = $query->pluck('id')->filter()->toArray();
 
-                        if (empty($ids)) {
-                            return 0;
-                        }
+                            if (empty($ids)) {
+                                return 0;
+                            }
 
-                        $products = Product::with(['exchange', 'stockPrice'])
-                            ->whereIn('id', $ids)
-                            ->get();
+                            $products = Product::with(['exchange', 'stockPrice'])
+                                ->whereIn('id', $ids)
+                                ->get();
 
-                        $totalMaterialUsd = $products->sum(function (Product $p) {
-                            return $p->material_value_total ?? 0;
-                        });
+                            $totalMaterialUsd = $products->sum(function (Product $p) {
+                                return $p->material_value_total ?? 0;
+                            });
 
-                        $totalGrams = $products->sum(function (Product $p) {
-                            return $p->weight_unit->toGram($p->weight) * ($p->amount ?? 1);
-                        });
+                            $totalGrams = $products->sum(function (Product $p) {
+                                return $p->weight_unit->toGram($p->weight) * ($p->amount ?? 1);
+                            });
 
-                        return $totalGrams > 0
-                            ? $totalMaterialUsd / $totalGrams
-                            : 0;
-                    }),
+                            return $totalGrams > 0
+                                ? $totalMaterialUsd / $totalGrams
+                                : 0;
+                        }),
                 ]),
             TextColumn::make('price_trend')
                 ->label('Price Trend')

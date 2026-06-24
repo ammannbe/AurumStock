@@ -2,7 +2,6 @@
 
 namespace App\Filament\Resources\DashboardResource\Pages;
 
-use App\Enums\Material;
 use App\Filament\Resources\DashboardResource;
 use App\Models\Exchange;
 use App\Models\StockPrice;
@@ -41,16 +40,9 @@ class Dashboard extends Page
         };
 
         $this->stockPrices = StockPrice::query()->limit(10)->get()->map(function ($p) use ($format) {
-            $material = null;
-            try {
-                $material = Material::tryFrom($p->material);
-            } catch (\Throwable $e) {
-                $material = null;
-            }
-
             return [
-                'material' => $p->material ? ($material !== null ? $material->name : $p->material) : '-',
-                'price' => number_format($p->price, 4),
+                'material' => $p->material->name,
+                'price' => number_format((float) $p->price, 4),
                 'fetched_at' => $format($p->fetched_at ?? $p->updated_at),
             ];
         })->toArray();

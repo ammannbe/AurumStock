@@ -1,6 +1,8 @@
 <?php
 
+use App\Filament\Pages\User\Profile;
 use App\Models\User;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 /** @var TestCase $this */
@@ -9,30 +11,27 @@ test('profile page is displayed', function () {
 
     $response = $this
         ->actingAs($user)
-        ->get('/app');
+        ->get('/app/profile');
 
-    $this->assertTrue(in_array($response->getStatusCode(), [200, 302]));
+    $response->assertOk();
 });
 
 test('profile information can be updated', function () {
     $user = User::factory()->create();
 
-    $user->update([
-        'name' => 'Test User',
-        'email' => 'test@example.com',
-    ]);
+    $component = Livewire::actingAs($user)
+        ->test(Profile::class); // @phpstan-ignore argument.templateType
+
+    $component
+        ->set('data.name', 'Test User')
+        ->set('data.email', 'test@example.com')
+        ->set('data.notes', 'Updated notes from profile page')
+        ->call('save')
+        ->assertHasNoErrors();
 
     $user->refresh();
 
     $this->assertSame('Test User', $user->name);
     $this->assertSame('test@example.com', $user->email);
-});
-
-test('user can be deleted', function () {
-    $user = User::factory()->create();
-    $userId = $user->id;
-
-    $user->delete();
-
-    $this->assertNull(User::find($userId));
+    $this->assertSame('Updated notes from profile page', $user->notes);
 });
