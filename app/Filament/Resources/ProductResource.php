@@ -147,7 +147,7 @@ class ProductResource extends Resource
                 ->required()
                 ->default(1)
                 ->minValue(0)
-                ->step(0.01),
+                ->step(0.0001),
             Select::make('weight_unit')
                 ->options(collect(WeightUnit::cases())->mapWithKeys(fn ($c) => [$c->value => $c->label()])->toArray())
                 ->required()

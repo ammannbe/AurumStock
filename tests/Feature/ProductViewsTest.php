@@ -47,6 +47,27 @@ class ProductViewsTest extends TestCase
         $this->assertEquals($user->id, $product->user_id);
     }
 
+    public function test_user_can_store_weight_with_four_decimal_places(): void
+    {
+        $user = User::factory()->create();
+        $depo = Depository::create(['user_id' => $user->id, 'name' => 'Home', 'location' => 'Box']);
+
+        $product = Product::create([
+            'name' => 'Precise Weight',
+            'type' => 1,
+            'material' => 1,
+            'weight' => 5.8065,
+            'weight_unit' => 2,
+            'amount' => 1,
+            'depository_id' => $depo->id,
+            'user_id' => $user->id,
+        ]);
+
+        $product->refresh();
+
+        $this->assertSame('5.8065', $product->weight);
+    }
+
     public function test_user_can_update_product_via_model(): void
     {
         $user = User::factory()->create();

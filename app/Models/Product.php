@@ -69,7 +69,7 @@ class Product extends Model
         'taxed_date' => 'date',
         'price' => 'decimal:2',
         'material' => Material::class,
-        'weight' => 'decimal:3',
+        'weight' => 'decimal:4',
         'weight_unit' => WeightUnit::class,
         'mintage' => 'integer',
     ];
