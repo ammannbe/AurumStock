@@ -28,6 +28,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\Summarizers\Sum;
@@ -98,134 +99,175 @@ class ProductResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->schema([
-            // Identification / ownership
-            Hidden::make('user_id')->default(fn () => auth()->id()),
-            TextInput::make('name')->required()->maxLength(255),
-            Select::make('depository_id')
-                ->label(__('Depository'))
-                ->options(fn () => Depository::where('user_id', auth()->id())->pluck('name', 'id'))
-                ->searchable()
-                ->required()
-                ->default(fn () => Depository::where('user_id', auth()->id())->first()?->id),
-            Select::make('type')
-                ->options(collect(ProductType::cases())->mapWithKeys(fn ($c) => [$c->value => $c->label()])->toArray())
-                ->required()
-                ->default(ProductType::Coin->value),
-            Select::make('material')
-                ->options(collect(Material::cases())->mapWithKeys(fn ($c) => [$c->value => $c->label()])->toArray())
-                ->required()
-                ->default(Material::Gold->value),
-            TextInput::make('reference_number')->nullable()->label(__('Reference Number')),
-            TextInput::make('year')->numeric()->nullable()->label(__('Year')),
+            Section::make(__('General'))->schema([
+                Hidden::make('user_id')->default(fn () => auth()->id()),
+                TextInput::make('name')->required()->maxLength(255)->columnSpan(3),
+                TextInput::make('year')->numeric()->nullable()->label(__('Year'))->columnSpan(1),
 
-            // Images & text
-            FileUpload::make('front_image_path')
-                ->label(__('Front Image'))
-                ->image()
-                ->directory('products')
-                ->disk('public')
-                ->nullable(),
-            FileUpload::make('back_image_path')
-                ->label(__('Back Image'))
-                ->image()
-                ->directory('products')
-                ->disk('public')
-                ->nullable(),
-            TextInput::make('text_front')
-                ->label(__('Text Front'))
-                ->nullable()
-                ->maxLength(255),
-            TextInput::make('text_back')
-                ->label(__('Text Back'))
-                ->nullable()
-                ->maxLength(255),
+                Select::make('depository_id')
+                    ->label(__('Depository'))
+                    ->options(fn () => Depository::where('user_id', auth()->id())->pluck('name', 'id'))
+                    ->searchable()
+                    ->required()
+                    ->default(fn () => Depository::where('user_id', auth()->id())->first()?->id)
+                    ->columnSpan(4),
+                Select::make('material')
+                    ->options(collect(Material::cases())->mapWithKeys(fn ($c) => [$c->value => $c->label()])->toArray())
+                    ->required()
+                    ->default(Material::Gold->value)
+                    ->columnSpan(4),
+                Select::make('type')
+                    ->label(__('Type'))
+                    ->options(collect(ProductType::cases())->mapWithKeys(fn ($c) => [$c->value => $c->label()])->toArray())
+                    ->required()
+                    ->default(ProductType::Coin->value)
+                    ->columnSpan(4),
+                Select::make('manufacturer')
+                    ->label(__('Manufacturer'))
+                    ->options(collect(Manufacturer::cases())->mapWithKeys(fn ($c) => [$c->value => $c->label()])->toArray())
+                    ->searchable()
+                    ->nullable()->columnSpan(4),
+                Select::make('country_of_origin')
+                    ->label(__('Country of Origin'))
+                    ->options([
+                        'CH' => __('Switzerland (CH)'),
+                        'DE' => __('Germany (DE)'),
+                        'AT' => __('Austria (AT)'),
+                        'GB' => __('United Kingdom (GB)'),
+                        'US' => __('United States (US)'),
+                        'CA' => __('Canada (CA)'),
+                        'AU' => __('Australia (AU)'),
+                        'ZA' => __('South Africa (ZA)'),
+                        'FR' => __('France (FR)'),
+                        'RU' => __('Russia (RU)'),
+                        'CN' => __('China (CN)'),
+                        'MX' => __('Mexico (MX)'),
+                        'CK' => __('Cook Islands (CK)'),
+                        'MN' => __('Mongolia (MN)'),
+                        'NU' => __('Niue (NU)'),
+                    ])
+                    ->searchable()
+                    ->nullable()->columnSpan(4),
+            ])->columns(8)->columnSpanFull(),
 
-            // Physical attributes
-            TextInput::make('weight')
-                ->label(__('Weight per Item'))
-                ->numeric()
-                ->required()
-                ->default(1)
-                ->minValue(0)
-                ->step(0.0001),
-            Select::make('weight_unit')
-                ->options(collect(WeightUnit::cases())->mapWithKeys(fn ($c) => [$c->value => $c->label()])->toArray())
-                ->required()
-                ->default(WeightUnit::TroyOunce->value),
-            Select::make('fineness')
-                ->label(__('Fineness'))
-                ->options(collect(Fineness::cases())->mapWithKeys(fn ($c) => [$c->value => $c->value])->toArray())
-                ->searchable()
-                ->nullable(),
-            TextInput::make('size')->nullable()->label(__('Size')),
-            TextInput::make('amount')->label(__('Amount'))->numeric()->required()->default(1)->minValue(1),
-            TextInput::make('face_value')->nullable()->label(__('Face Value')),
+            Section::make(__('Technical data'))->schema([
+                TextInput::make('size')->nullable()->label(__('Size'))->columnSpan(2),
+                TextInput::make('amount')
+                    ->label(__('Amount'))
+                    ->numeric()
+                    ->required()
+                    ->default(1)
+                    ->minValue(1)
+                    ->columnSpan(2),
+                TextInput::make('weight')
+                    ->label(__('Weight per Item'))
+                    ->numeric()
+                    ->required()
+                    ->default(1)
+                    ->minValue(0)
+                    ->step(0.0001)
+                    ->columnSpan(2),
+                Select::make('weight_unit')
+                    ->options(collect(WeightUnit::cases())->mapWithKeys(fn ($c) => [$c->value => $c->label()])->toArray())
+                    ->required()
+                    ->default(WeightUnit::TroyOunce->value)
+                    ->columnSpan(2),
 
-            // Provenance / metadata
-            Select::make('quality')
-                ->label(__('Quality'))
-                ->options(collect(Quality::cases())->mapWithKeys(fn ($c) => [$c->value => $c->label()])->toArray())
-                ->searchable()
-                ->nullable(),
-            Checkbox::make('certificate')
-                ->label(__('Certificate'))
-                ->inline(false),
-            Select::make('manufacturer')
-                ->label(__('Manufacturer'))
-                ->options(collect(Manufacturer::cases())->mapWithKeys(fn ($c) => [$c->value => $c->label()])->toArray())
-                ->searchable()
-                ->nullable(),
-            Select::make('country_of_origin')
-                ->label(__('Country of Origin'))
-                ->options([
-                    'CH' => __('Switzerland (CH)'),
-                    'DE' => __('Germany (DE)'),
-                    'AT' => __('Austria (AT)'),
-                    'GB' => __('United Kingdom (GB)'),
-                    'US' => __('United States (US)'),
-                    'CA' => __('Canada (CA)'),
-                    'AU' => __('Australia (AU)'),
-                    'ZA' => __('South Africa (ZA)'),
-                    'FR' => __('France (FR)'),
-                    'RU' => __('Russia (RU)'),
-                    'CN' => __('China (CN)'),
-                    'MX' => __('Mexico (MX)'),
-                ])
-                ->searchable()
-                ->nullable(),
-            Select::make('packaging')
-                ->label(__('Packaging'))
-                ->options(Packaging::toArray())
-                ->searchable()
-                ->nullable(),
-            TextInput::make('mintage')
-                ->label(__('Mintage'))
-                ->numeric()
-                ->nullable()
-                ->minValue(0),
+                Select::make('fineness')
+                    ->label(__('Fineness'))
+                    ->options(collect(Fineness::cases())->mapWithKeys(fn ($c) => [$c->value => $c->value])->toArray())
+                    ->searchable()
+                    ->nullable()
+                    ->columnSpan(2),
+                Select::make('quality')
+                    ->label(__('Quality'))
+                    ->options(collect(Quality::cases())->mapWithKeys(fn ($c) => [$c->value => $c->label()])->toArray())
+                    ->searchable()
+                    ->nullable()
+                    ->columnSpan(2),
+                Checkbox::make('certificate')
+                    ->label(__('Certificate'))
+                    ->inline(false)
+                    ->columnSpan(2),
+                TextInput::make('reference_number')
+                    ->nullable()
+                    ->label(__('Reference Number'))
+                    ->columnSpan(2),
+                Select::make('packaging')
+                    ->label(__('Packaging'))
+                    ->options(Packaging::toArray())
+                    ->searchable()
+                    ->nullable()
+                    ->columnSpan(4),
+                TextInput::make('mintage')
+                    ->label(__('Mintage'))
+                    ->placeholder(__('How many pieces were produced?'))
+                    ->numeric()
+                    ->nullable()
+                    ->minValue(0)
+                    ->columnSpan(4),
+            ])->columns(8)->columnSpanFull(),
 
-            // Financial
-            TextInput::make('price')
-                ->numeric()
-                ->nullable()
-                ->minValue(0)
-                ->step(0.01)
-                ->label(__('Total Purchase Price')),
-            Select::make('price_currency')
-                ->label(__('Purchase Currency'))
-                ->options(Currency::toArray())
-                ->searchable()
-                ->nullable(),
-            DatePicker::make('purchase_date')
-                ->label(__('Purchase Date'))
-                ->nullable(),
-            DatePicker::make('taxed_date')
-                ->label(__('Taxed Date'))
-                ->nullable(),
+            Section::make(__('Financial'))->schema([
+                TextInput::make('face_value')
+                    ->nullable()
+                    ->label(__('Face Value'))
+                    ->columnSpan(4),
+                TextInput::make('price')
+                    ->numeric()
+                    ->nullable()
+                    ->minValue(0)
+                    ->step(0.01)
+                    ->label(__('Total Purchase Price'))
+                    ->columnSpan(2),
+                Select::make('price_currency')
+                    ->label(__('Purchase Currency'))
+                    ->options(Currency::toArray())
+                    ->searchable()
+                    ->nullable()
+                    ->columnSpan(2),
 
-            // Notes
-            Textarea::make('notes')->nullable()->columnSpanFull(),
-        ]);
+                DatePicker::make('purchase_date')
+                    ->label(__('Purchase Date'))
+                    ->nullable()
+                    ->columnSpan(4),
+                DatePicker::make('taxed_date')
+                    ->label(__('Taxed Date'))
+                    ->nullable()
+                    ->columnSpan(4),
+            ])->columns(8)->columnSpanFull(),
+
+            Section::make(__('Look'))->schema([
+                FileUpload::make('front_image_path')
+                    ->label(__('Front Image'))
+                    ->image()
+                    ->directory('products')
+                    ->disk('public')
+                    ->nullable()
+                    ->columnSpan(4),
+                FileUpload::make('back_image_path')
+                    ->label(__('Back Image'))
+                    ->image()
+                    ->directory('products')
+                    ->disk('public')
+                    ->nullable()
+                    ->columnSpan(4),
+                TextInput::make('text_front')
+                    ->label(__('Text Front'))
+                    ->nullable()
+                    ->maxLength(255)
+                    ->columnSpan(4),
+                TextInput::make('text_back')
+                    ->label(__('Text Back'))
+                    ->nullable()
+                    ->maxLength(255)
+                    ->columnSpan(4),
+            ])->columns(8)->columnSpanFull(),
+
+            Section::make(__('Notes'))->schema([
+                Textarea::make('notes')->nullable()->columnSpanFull(),
+            ])->columns(8)->columnSpanFull(),
+        ])->columns(8);
     }
 
     public static function table(Table $table): Table
@@ -752,8 +794,8 @@ class ProductResource extends Resource
                 ]),
             TextColumn::make('year')->label(__('Year'))->sortable()->toggleable(),
 
-            TextColumn::make('text_front')->label(__('Text Front'))->limit(30)->toggleable(isToggledHiddenByDefault: true),
-            TextColumn::make('text_back')->label(__('Text Back'))->limit(30)->toggleable(isToggledHiddenByDefault: true),
+            TextColumn::make('text_front')->label(__('Text Front'))->limit(30)->toggleable(isToggledHiddenByDefault: true)->searchable(),
+            TextColumn::make('text_back')->label(__('Text Back'))->limit(30)->toggleable(isToggledHiddenByDefault: true)->searchable(),
             TextColumn::make('quality')
                 ->label(__('Quality'))
                 ->getStateUsing(fn ($record) => $record->quality ? Quality::from($record->quality)->label() : '-')
