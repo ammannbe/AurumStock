@@ -1,58 +1,195 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# AurumStock
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+AurumStock is a precious metals inventory application for tracking products, depositories, shared access, stock prices, and exchange rates.
 
-## About Laravel
+Written with the PHP framework [Laravel](https://laravel.com/) and built primarily with [Filament](https://filamentphp.com/) and [Livewire](https://livewire.laravel.com/).
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Getting Started
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
-
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
-
-## Learning Laravel
-
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
-
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+Clone the repository:
 
 ```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+git clone <your-repository-url>
+cd AurumStock
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+### Prerequisites
 
-## Contributing
+#### Development requirements
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+This project is built around [DDEV](https://ddev.com/). For local development you only need DDEV (and Docker) on your machine.
 
-## Code of Conduct
+Use DDEV wrappers for project commands:
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+```bash
+ddev artisan
+ddev composer
+ddev npm
+ddev <custom command>
+```
 
-## Security Vulnerabilities
+#### Production requirements
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+- PHP 8.3+
+- Composer 2+
+- Node.js + npm
+- Database (MariaDB recommended)
+- Web server (Nginx or Apache)
+- Standard Laravel runtime requirements
 
-## License
+## Features
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+- Product management for precious metals (material, type, fineness, weight units, purchase data, images, notes, and more)
+- Depository management
+- Product and depository sharing between users with `view` and `edit` permissions
+- Live material valuation based on stock prices
+- Exchange rates based on USD (`1 USD = exchange.value`)
+- Stock price history tracking
+- User profile preferences (currency and locale)
+- Filament user panel authentication (`/app/login`)
+
+## Installation and Update
+
+### Development installation
+
+```bash
+# start containers
+ddev start
+
+# php dependencies
+ddev composer install
+
+# create local env file
+cp .env.example .env
+
+# application setup
+ddev artisan key:generate
+ddev artisan migrate
+ddev artisan storage:link
+
+# frontend dependencies and build
+ddev npm install
+ddev npm run build
+```
+
+Launch the app:
+
+```bash
+ddev launch
+```
+
+Start frontend watch mode during development:
+
+```bash
+ddev npm run dev
+```
+
+### API configuration
+
+The project can fetch external market data using these environment variables:
+
+- `METALPRICE_API_KEY`
+- `EXCHANGE_RATE_API_KEY`
+- `METALPRICE_BASE_URL` (optional override)
+- `EXCHANGE_RATE_BASE_URL` (optional override)
+
+Set them in `.env` if you want live rates and prices.
+
+### Fetching market data
+
+Run these commands manually if needed:
+
+```bash
+ddev artisan app:fetch-exchange-rates
+ddev artisan app:fetch-stock-prices
+```
+
+The scheduler is configured to run both tasks daily.
+
+### Development update flow
+
+```bash
+ddev start
+ddev composer install
+ddev artisan migrate
+ddev npm install
+ddev npm run build
+```
+
+Clear caches if required:
+
+```bash
+ddev artisan cache:clear
+ddev artisan config:clear
+ddev artisan route:clear
+ddev artisan view:clear
+```
+
+### Production deployment/update
+
+```bash
+composer install --optimize-autoloader --no-dev
+php artisan migrate --force
+npm install --no-save
+npm run build
+php artisan storage:link
+```
+
+Scheduler cron entry:
+
+```bash
+* * * * * www-data cd /path-to-project && php artisan schedule:run >> /dev/null 2>&1
+```
+
+## Authentication
+
+- Root path `/` redirects to `/app/login`.
+- Application access is handled by Filament user panel auth.
+- Legacy Laravel auth routes such as `/login` and `/register` are intentionally unavailable.
+
+## Translations
+
+Application translations are provided via JSON language files:
+
+- `lang/en.json`
+- `lang/de.json`
+
+After changing translations, clear caches when needed:
+
+```bash
+ddev artisan cache:clear
+ddev artisan config:clear
+```
+
+## IDE Helpers
+
+Generate IDE helper files:
+
+```bash
+ddev composer run ide-helper
+```
+
+## Testing / Code Quality
+
+Run these commands after code changes:
+
+```bash
+ddev composer test
+ddev composer pint
+ddev composer phpstan
+```
+
+## Tech Stack
+
+- Laravel 13
+- Filament 5
+- Livewire 4
+- DDEV
+- MariaDB
+- Pest
+- Laravel Pint
+- Larastan
+
+## Authors
+
+- Benjamin Ammann
