@@ -106,7 +106,8 @@ check_or_abort $? $CURRENT_STEP
 
 if [[ -n $CMD_NPM ]]; then
     step "Install npm packages..."
-    $CMD_NPM install --no-save
+    $CMD_ARTISAN livewire:publish --assets \
+        && $CMD_NPM install --no-save
     check_or_abort $? $CURRENT_STEP
 else
     echo -ne "\e[9m"
