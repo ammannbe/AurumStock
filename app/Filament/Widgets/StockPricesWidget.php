@@ -33,7 +33,7 @@ class StockPricesWidget extends StatsOverviewWidget
                 $history = $stock
                     ? $stock->histories()
                         ->latest('id')
-                        ->limit(20)
+                        ->limit(30)
                         ->pluck('price')
                         ->reverse()
                         ->map(fn ($value): float => (float) $value)

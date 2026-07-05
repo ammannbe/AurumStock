@@ -17,6 +17,11 @@ class ExchangesWidget extends TableWidget
         return __('Exchange Rates');
     }
 
+    public function getTableHeading(): ?string
+    {
+        return __('Exchange Rates');
+    }
+
     /**
      * @return Builder<Exchange>|null
      */
@@ -28,7 +33,7 @@ class ExchangesWidget extends TableWidget
     protected function getTableColumns(): array
     {
         return [
-            TextColumn::make('currency'),
+            TextColumn::make('currency')->label(__('Currency')),
             TextColumn::make('value')->money('usd')->label(__('Rate')),
             TextColumn::make('fetched_at')->label(__('Updated'))->isoDate(),
         ];
