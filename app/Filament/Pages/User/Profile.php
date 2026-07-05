@@ -97,7 +97,7 @@ class Profile extends Page implements HasForms
                     ->options([
                         'en' => __('English'),
                         'de' => __('German'),
-                        'de-CH' => __('German (Switzerland)'),
+                        'de_CH' => __('German (Switzerland)'),
                     ])
                     ->required(),
                 Textarea::make('notes')
