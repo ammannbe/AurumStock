@@ -14,4 +14,12 @@ enum ProductType: int
             self::Coin => __('Coin'),
         };
     }
+
+    public function icon(): string
+    {
+        return match ($this) {
+            self::Ingot => 'heroicon-o-document-currency-dollar',
+            self::Coin => 'heroicon-o-currency-dollar',
+        };
+    }
 }

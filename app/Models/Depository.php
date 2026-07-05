@@ -27,4 +27,9 @@ class Depository extends Model
     {
         return $this->hasMany(Product::class);
     }
+
+    public function shares(): HasMany
+    {
+        return $this->hasMany(DepositoryShare::class);
+    }
 }

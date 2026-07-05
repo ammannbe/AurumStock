@@ -30,7 +30,7 @@ class DepositoryPolicy
 
         $share = DepositoryShare::where('depository_id', $depository->id)->where('shared_with_user_id', $user->id)->first();
 
-        return $share && $share->permission === SharePermission::Edit->value;
+        return $share && $share->permission === SharePermission::Edit;
     }
 
     public function delete(User $user, Depository $depository): bool

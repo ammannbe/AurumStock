@@ -9,6 +9,7 @@ use App\Enums\Material;
 use App\Enums\Packaging;
 use App\Enums\ProductType;
 use App\Enums\Quality;
+use App\Enums\SharePermission;
 use App\Enums\WeightUnit;
 use App\Filament\Resources\ProductResource\Pages\CreateProduct;
 use App\Filament\Resources\ProductResource\Pages\EditProduct;
@@ -16,7 +17,9 @@ use App\Filament\Resources\ProductResource\Pages\ListProducts;
 use App\Models\Depository;
 use App\Models\Exchange;
 use App\Models\Product;
+use App\Models\User;
 use BackedEnum;
+use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -24,6 +27,7 @@ use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Hidden;
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -36,6 +40,7 @@ use Filament\Tables\Columns\Summarizers\Summarizer;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -96,20 +101,151 @@ class ProductResource extends Resource
         return (float) ($amount ?? 0) * static::preferredCurrencyRate();
     }
 
+    /**
+     * @return array<int, string>
+     */
+    protected static function depositoryOptionsForCurrentUser(): array
+    {
+        $userId = Auth::id();
+
+        if (! $userId) {
+            return [];
+        }
+
+        return Depository::query()
+            ->where(function (EloquentBuilder $query) use ($userId): void {
+                $query
+                    ->where('user_id', $userId)
+                    ->orWhereHas('shares', fn (EloquentBuilder $shareQuery) => $shareQuery
+                        ->where('shared_with_user_id', $userId)
+                        ->where('permission', SharePermission::Edit));
+            })
+            ->orderBy('name')
+            ->pluck('name', 'id')
+            ->all();
+    }
+
+    public static function makeEditSharesAction(): Action
+    {
+        return Action::make('editShares')
+            ->label(__('Edit Shares'))
+            ->icon('heroicon-o-user-group')
+            ->color('gray')
+            ->visible(fn (Product $record): bool => $record->user_id === Auth::id())
+            ->fillForm(function (Product $record): array {
+                $permissionsByUser = $record->shares()->pluck('permission', 'shared_with_user_id');
+
+                return [
+                    'shares' => $permissionsByUser
+                        ->map(fn ($permission, $sharedWithUserId): array => [
+                            'shared_with_user_id' => (int) $sharedWithUserId,
+                            'permission' => (int) $permission,
+                        ])
+                        ->values()
+                        ->all(),
+                ];
+            })
+            ->schema([
+                Repeater::make('shares')
+                    ->label(__('Shares'))
+                    ->addActionLabel(__('Add Share'))
+                    ->defaultItems(0)
+                    ->reorderable(false)
+                    ->schema([
+                        Select::make('shared_with_user_id')
+                            ->label(__('User'))
+                            ->required()
+                            ->searchable()
+                            ->getSearchResultsUsing(fn (string $search): array => User::query()
+                                ->whereKeyNot(Auth::id())
+                                ->where('name', 'like', "%{$search}%")
+                                ->orderBy('name')
+                                ->limit(50)
+                                ->pluck('name', 'id')
+                                ->all())
+                            ->getOptionLabelUsing(fn ($value): ?string => User::query()->find($value)?->name)
+                            ->disableOptionsWhenSelectedInSiblingRepeaterItems(),
+                        Select::make('permission')
+                            ->label(__('Permission'))
+                            ->required()
+                            ->options([
+                                SharePermission::View->value => SharePermission::View->label(),
+                                SharePermission::Edit->value => SharePermission::Edit->label(),
+                            ])
+                            ->default(SharePermission::View->value),
+                    ])
+                    ->columns(2),
+            ])
+            ->action(function (Product $record, array $data): void {
+                if ($record->user_id !== Auth::id()) {
+                    return;
+                }
+
+                /** @var array<int, array{shared_with_user_id?: mixed, permission?: mixed}> $shareRows */
+                $shareRows = is_array($data['shares'] ?? null) ? $data['shares'] : [];
+
+                $shares = collect($shareRows)
+                    ->filter(fn (array $row): bool => filled($row['shared_with_user_id'] ?? null))
+                    ->map(fn (array $row): array => [
+                        'shared_with_user_id' => (int) $row['shared_with_user_id'],
+                        'permission' => (int) ($row['permission'] ?? SharePermission::View->value),
+                    ])
+                    ->reject(fn (array $row): bool => $row['shared_with_user_id'] === $record->user_id)
+                    ->unique('shared_with_user_id')
+                    ->values();
+
+                $keepUserIds = $shares->pluck('shared_with_user_id')->all();
+
+                if (empty($keepUserIds)) {
+                    $record->shares()->delete();
+                } else {
+                    $record->shares()->whereNotIn('shared_with_user_id', $keepUserIds)->delete();
+                }
+
+                foreach ($shares as $share) {
+                    $record->shares()->updateOrCreate(
+                        ['shared_with_user_id' => $share['shared_with_user_id']],
+                        [
+                            'owner_user_id' => $record->user_id,
+                            'permission' => $share['permission'],
+                        ]
+                    );
+                }
+            });
+    }
+
+    public static function getEloquentQuery(): EloquentBuilder
+    {
+        $userId = Auth::id();
+
+        $query = parent::getEloquentQuery()->withCount('shares');
+
+        if (! $userId) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->where(function (EloquentBuilder $visibilityQuery) use ($userId): void {
+            $visibilityQuery
+                ->where('user_id', $userId)
+                ->orWhereHas('shares', fn (EloquentBuilder $shareQuery) => $shareQuery->where('shared_with_user_id', $userId))
+                ->orWhereHas('depository.shares', fn (EloquentBuilder $shareQuery) => $shareQuery->where('shared_with_user_id', $userId));
+        });
+    }
+
     public static function form(Schema $schema): Schema
     {
         return $schema->schema([
             Section::make(__('General'))->schema([
-                Hidden::make('user_id')->default(fn () => auth()->id()),
+                Hidden::make('user_id')->default(fn () => Auth::id()),
                 TextInput::make('name')->required()->maxLength(255)->columnSpan(3),
                 TextInput::make('year')->numeric()->nullable()->label(__('Year'))->columnSpan(1),
 
                 Select::make('depository_id')
                     ->label(__('Depository'))
-                    ->options(fn () => Depository::where('user_id', auth()->id())->pluck('name', 'id'))
+                    ->options(fn (): array => static::depositoryOptionsForCurrentUser())
                     ->searchable()
                     ->required()
-                    ->default(fn () => Depository::where('user_id', auth()->id())->first()?->id)
+                    ->default(fn () => array_key_first(static::depositoryOptionsForCurrentUser()))
                     ->columnSpan(4),
                 Select::make('material')
                     ->options(collect(Material::cases())->mapWithKeys(fn ($c) => [$c->value => $c->label()])->toArray())
@@ -273,12 +409,26 @@ class ProductResource extends Resource
     public static function table(Table $table): Table
     {
         return $table->columns([
-            TextColumn::make('type')
+            IconColumn::make('type')
                 ->label(__('Type'))
-                ->formatStateUsing(fn ($state) => ProductType::from((int) $state)->label())
+                ->icon(fn (ProductType $state) => $state->icon())
                 ->sortable()
+                ->tooltip(fn (ProductType $state) => $state->label())
+                ->toggleable(),
+            TextColumn::make('material')
+                ->formatStateUsing(fn (Material $state) => $state->symbol())
+                ->sortable()
+                ->badge()
+                ->icon(fn (Material $state) => $state->icon())
+                ->color(fn (Material $state) => $state->color())
+                ->tooltip(fn (Material $state) => $state->label())
                 ->toggleable(),
             TextColumn::make('name')->searchable()->label(__('Name')),
+            TextColumn::make('shares_count')
+                ->label(__('Shares'))
+                ->badge()
+                ->color(fn (int $state): string => $state > 0 ? 'info' : 'gray')
+                ->toggleable(),
             TextColumn::make('front_image_preview')
                 ->label(__('Image'))
                 ->html()
@@ -309,14 +459,6 @@ class ProductResource extends Resource
                 })($record))
                 ->toggleable(),
 
-            TextColumn::make('material')
-                ->formatStateUsing(fn (Material $state) => $state->symbol())
-                ->sortable()
-                ->badge()
-                ->icon(fn (Material $state) => $state->icon())
-                ->color(fn (Material $state) => $state->color())
-                ->tooltip(fn (Material $state) => $state->label())
-                ->toggleable(),
             TextColumn::make('weight')
                 ->label(__('Weight'))
                 ->numeric()
@@ -828,6 +970,7 @@ class ProductResource extends Resource
                 ->toggleable(isToggledHiddenByDefault: true),
 
         ])->recordActions([
+            static::makeEditSharesAction(),
             EditAction::make()->color('secondary'),
             DeleteAction::make(),
         ])->toolbarActions([
@@ -835,7 +978,7 @@ class ProductResource extends Resource
         ])->filters([
             SelectFilter::make('material')->options(collect(Material::cases())->mapWithKeys(fn ($c) => [$c->value => $c->label()])->toArray()),
             SelectFilter::make('type')->options(collect(ProductType::cases())->mapWithKeys(fn ($c) => [$c->value => $c->label()])->toArray()),
-            SelectFilter::make('depository_id')->label(__('Depository'))->options(fn () => Depository::where('user_id', auth()->id())->pluck('name', 'id')),
+            SelectFilter::make('depository_id')->label(__('Depository'))->options(fn (): array => static::depositoryOptionsForCurrentUser()),
             SelectFilter::make('year')->options(fn () => Product::query()->distinct()->pluck('year', 'year')->filter()->toArray()),
             SelectFilter::make('price_currency')->label(__('Purchase Currency'))->options(fn () => Product::query()->distinct()->pluck('price_currency', 'price_currency')->filter()->toArray()),
         ])->defaultSort('name')->summaries(pageCondition: false);

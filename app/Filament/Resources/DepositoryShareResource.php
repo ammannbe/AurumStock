@@ -12,6 +12,8 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Auth;
 
 class DepositoryShareResource extends Resource
 {
@@ -36,19 +38,26 @@ class DepositoryShareResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->schema([
-            Hidden::make('owner_user_id')->default(fn () => auth()->id()),
-            Select::make('depository_id')->label(__('Depository'))->options(fn () => Depository::where('user_id', auth()->id())->pluck('name', 'id'))->searchable()->required(),
-            Select::make('shared_with_user_id')->label(__('Share With'))->options(fn () => User::pluck('name', 'id'))->searchable()->required(),
+            Hidden::make('owner_user_id')->default(fn () => Auth::id()),
+            Select::make('depository_id')->label(__('Depository'))->options(fn () => Depository::where('user_id', Auth::id())->pluck('name', 'id'))->searchable()->required(),
+            Select::make('shared_with_user_id')->label(__('Share With'))->options(fn () => User::query()->whereKeyNot(Auth::id())->pluck('name', 'id'))->searchable()->required(),
             Select::make('permission')->label(__('Permission'))->options([SharePermission::View->value => SharePermission::View->label(), SharePermission::Edit->value => SharePermission::Edit->label()])->required(),
         ]);
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->where('owner_user_id', Auth::id());
     }
 
     public static function table(Table $table): Table
     {
         return $table->columns([
             TextColumn::make('depository.name')->label(__('Depository')),
-            TextColumn::make('shared_with_user_id')->label(__('Shared With'))->getStateUsing(fn ($record) => optional($record->sharedWith)->name),
-            TextColumn::make('permission')->label(__('Permission'))->getStateUsing(fn ($record) => SharePermission::from($record->permission)->label()),
+            TextColumn::make('sharedWith.name')->label(__('Shared With')),
+            TextColumn::make('permission')
+                ->label(__('Permission'))
+                ->getStateUsing(fn (DepositoryShare $record) => $record->permission->label()),
         ])->defaultSort('id');
     }
 }

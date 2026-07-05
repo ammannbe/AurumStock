@@ -36,12 +36,12 @@ class ProductPolicy
         }
 
         $share = ProductShare::where('product_id', $product->id)->where('shared_with_user_id', $user->id)->first();
-        if ($share && $share->permission === SharePermission::Edit->value) {
+        if ($share && $share->permission === SharePermission::Edit) {
             return true;
         }
 
         $dshare = DepositoryShare::where('depository_id', $product->depository_id)->where('shared_with_user_id', $user->id)->first();
-        if ($dshare && $dshare->permission === SharePermission::Edit->value) {
+        if ($dshare && $dshare->permission === SharePermission::Edit) {
             return true;
         }
 

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\Material;
+use App\Enums\ProductType;
 use App\Enums\WeightUnit;
 use Database\Factories\ProductFactory;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -63,6 +64,7 @@ class Product extends Model
     ];
 
     protected $casts = [
+        'type' => ProductType::class,
         'assets' => 'array',
         'certificate' => 'boolean',
         'purchase_date' => 'date',
