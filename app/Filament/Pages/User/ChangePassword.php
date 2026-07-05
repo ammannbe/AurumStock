@@ -87,5 +87,7 @@ class ChangePassword extends Page implements HasForms
             ->title(__('Password updated'))
             ->success()
             ->send();
+
+        $this->dispatch('password-updated-reload', url: static::getUrl());
     }
 }

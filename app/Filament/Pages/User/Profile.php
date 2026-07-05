@@ -97,6 +97,7 @@ class Profile extends Page implements HasForms
                     ->options([
                         'en' => __('English'),
                         'de' => __('German'),
+                        'de-CH' => __('German (Switzerland)'),
                     ])
                     ->required(),
                 Textarea::make('notes')
@@ -119,5 +120,7 @@ class Profile extends Page implements HasForms
             ->title(__('Profile updated'))
             ->success()
             ->send();
+
+        $this->redirect(static::getUrl(), navigate: false);
     }
 }

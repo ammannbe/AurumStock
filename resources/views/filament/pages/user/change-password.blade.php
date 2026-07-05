@@ -1,4 +1,6 @@
-<x-filament-panels::page>
+<x-filament-panels::page
+    x-on:password-updated-reload.window="setTimeout(() => { window.location.href = $event.detail.url }, 1200)"
+>
     <form wire:submit="save">
         {{ $this->form }}
 

@@ -4,6 +4,10 @@
     </div>
 
     <div>
+        <x-livewire-mount component-class="\App\Filament\Widgets\StockPriceHistoryChartWidget" />
+    </div>
+
+    <div>
         <x-livewire-mount component-class="\App\Filament\Widgets\ExchangesWidget" />
     </div>
 </div>
