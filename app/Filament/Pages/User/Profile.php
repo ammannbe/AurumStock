@@ -22,6 +22,8 @@ class Profile extends Page implements HasForms
 
     protected static BackedEnum|string|null $navigationIcon = 'heroicon-o-user';
 
+    protected static ?int $navigationSort = 10;
+
     protected static ?string $navigationLabel = null;
 
     protected static \UnitEnum|string|null $navigationGroup = null;
