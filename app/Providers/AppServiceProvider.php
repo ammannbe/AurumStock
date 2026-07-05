@@ -29,8 +29,6 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        require_once app_path('helpers.php');
-
         // Register product preview JS for Filament
         FilamentAsset::register([
             Js::make('product-previews')->package('app'),
