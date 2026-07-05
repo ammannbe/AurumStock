@@ -989,6 +989,11 @@ class ProductResource extends Resource
         return __('Product');
     }
 
+    public static function getPluralModelLabel(): string
+    {
+        return __('Products');
+    }
+
     public static function getPages(): array
     {
         return [

@@ -178,6 +178,16 @@ class DepositoryResource extends Resource
         ])->defaultSort('name');
     }
 
+    public static function getModelLabel(): string
+    {
+        return __('Depository');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('Depositories');
+    }
+
     public static function getPages(): array
     {
         return [

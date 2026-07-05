@@ -2,39 +2,60 @@
 
 namespace App\Filament\Widgets;
 
+use App\Enums\Material;
 use App\Models\StockPrice;
-use Filament\Tables\Columns\TextColumn;
-use Filament\Widgets\TableWidget;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Relations\Relation;
+use Filament\Widgets\StatsOverviewWidget;
+use Filament\Widgets\StatsOverviewWidget\Stat;
+use Illuminate\Support\Number;
 
-class StockPricesWidget extends TableWidget
+class StockPricesWidget extends StatsOverviewWidget
 {
-    protected static ?string $heading = null;
-
     public function getHeading(): ?string
     {
         return __('Stock Prices');
     }
 
     /**
-     * @return Builder<StockPrice>|null
+     * @return array<int, Stat>
      */
-    protected function getTableQuery(): Builder|Relation|null
+    protected function getStats(): array
     {
-        return StockPrice::query()->limit(10);
-    }
+        return collect(Material::cases())
+            ->map(function (Material $material): Stat {
+                $stock = StockPrice::query()
+                    ->where('material', $material)
+                    ->latest('fetched_at')
+                    ->latest('id')
+                    ->first();
 
-    protected function getTableColumns(): array
-    {
-        return [
-            TextColumn::make('material')
-                ->badge()
-                ->getStateUsing(fn ($record) => $record->material->label().' ('.$record->material->symbol().')')
-                ->color(fn ($record) => $record->material->color() ?? null)
-                ->icon(fn ($record) => $record->material->icon() ?? null),
-            TextColumn::make('price')->money('usd')->label(__('USD / oz')),
-            TextColumn::make('fetched_at')->label(__('Updated'))->isoDate(),
-        ];
+                $price = $stock ? (float) $stock->price : 0.0;
+
+                $history = $stock
+                    ? $stock->histories()
+                        ->latest('id')
+                        ->limit(20)
+                        ->pluck('price')
+                        ->reverse()
+                        ->map(fn ($value): float => (float) $value)
+                        ->values()
+                        ->all()
+                    : [];
+
+                if ($history === []) {
+                    $history = [$price];
+                }
+
+                return Stat::make($material->label(), Number::currency($price, 'USD', app()->getLocale(), 4))
+                    ->description(__('USD / oz'))
+                    ->descriptionIcon($material->icon())
+                    ->color(match ($material) {
+                        Material::Gold => 'warning',
+                        Material::Silver => 'gray',
+                        Material::Platinum => 'info',
+                        Material::Palladium => 'success',
+                    })
+                    ->chart($history);
+            })
+            ->all();
     }
 }
