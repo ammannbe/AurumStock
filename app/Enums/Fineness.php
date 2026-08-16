@@ -5,6 +5,7 @@ namespace App\Enums;
 enum Fineness: string
 {
     case F9999 = '999.9';
+    case F9995 = '999.5';
     case F999 = '999';
     case F990 = '990';
     case F9583 = '958.3';
