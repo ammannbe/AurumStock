@@ -3,6 +3,7 @@
 namespace App\Filament\Widgets;
 
 use App\Enums\Material;
+use App\Support\CurrencyConverter;
 use Carbon\Carbon;
 use Filament\Forms\Components\DatePicker;
 use Filament\Schemas\Schema;
@@ -22,7 +23,7 @@ class StockPriceHistoryChartWidget extends ChartWidget
 
     public function getHeading(): ?string
     {
-        return __('Stock Price History');
+        return __('Stock Price History').' ('.CurrencyConverter::preferredCode().')';
     }
 
     public function filtersSchema(Schema $schema): Schema
@@ -50,15 +51,15 @@ class StockPriceHistoryChartWidget extends ChartWidget
 
         $rows = DB::table('stock_price_histories')
             ->join('stock_prices', 'stock_prices.id', '=', 'stock_price_histories.stock_price_id')
-            ->selectRaw('stock_prices.material as material, DATE(stock_price_histories.created_at) as day, AVG(stock_price_histories.price) as avg_price')
-            ->whereBetween('stock_price_histories.created_at', [$startDate->copy()->startOfDay(), $endDate->copy()->endOfDay()])
-            ->groupBy('stock_prices.material', DB::raw('DATE(stock_price_histories.created_at)'))
+            ->selectRaw('stock_prices.material as material, DATE(COALESCE(stock_price_histories.fetched_at, stock_price_histories.created_at)) as day, AVG(stock_price_histories.price) as avg_price')
+            ->whereBetween(DB::raw('COALESCE(stock_price_histories.fetched_at, stock_price_histories.created_at)'), [$startDate->copy()->startOfDay(), $endDate->copy()->endOfDay()])
+            ->groupBy('stock_prices.material', DB::raw('DATE(COALESCE(stock_price_histories.fetched_at, stock_price_histories.created_at))'))
             ->orderBy('day')
             ->get()
             ->map(fn ($row): array => [
                 'material' => (int) $row->material,
                 'day' => (string) $row->day,
-                'avg_price' => (float) $row->avg_price,
+                'avg_price' => CurrencyConverter::fromUsd((float) $row->avg_price),
             ])
             ->values();
 

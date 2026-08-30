@@ -56,7 +56,14 @@ class FetchStockPrices extends Command
                 ['price' => $price, 'fetched_at' => now()]
             );
 
-            StockPriceHistory::create(['stock_price_id' => $stock->id, 'price' => $price]);
+            $historyTimestamp = $stock->fetched_at ?? now();
+
+            StockPriceHistory::updateOrCreate([
+                'stock_price_id' => $stock->id,
+                'price' => $price,
+                'fetched_at' => $historyTimestamp,
+            ]);
+
             $this->info("Updated {$symbol}: ".number_format($price, 6).' USD/oz');
         }
 

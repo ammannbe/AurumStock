@@ -13,7 +13,12 @@ class StockPriceHistory extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['stock_price_id', 'price'];
+    protected $fillable = ['stock_price_id', 'price', 'fetched_at'];
+
+    protected $casts = [
+        'price' => 'decimal:6',
+        'fetched_at' => 'datetime',
+    ];
 
     public function stockPrice(): BelongsTo
     {

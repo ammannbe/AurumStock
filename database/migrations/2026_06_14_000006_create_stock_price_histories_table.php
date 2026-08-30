@@ -12,6 +12,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('stock_price_id')->constrained()->cascadeOnDelete();
             $table->decimal('price', 14, 6);
+            $table->timestamp('fetched_at')->nullable();
             $table->timestamps();
         });
     }

@@ -4,7 +4,6 @@ namespace App\Filament\Resources;
 
 use App\Enums\Material;
 use App\Models\StockPrice;
-use App\Models\StockPriceHistory;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
@@ -56,7 +55,10 @@ class StockPriceResource extends Resource
 
     public static function afterSave(StockPrice $record): void
     {
-        // create history entry
-        StockPriceHistory::create(['stock_price_id' => $record->id, 'price' => $record->price]);
+        $record->histories()->updateOrCreate([
+            'stock_price_id' => $record->id,
+            'price' => $record->price,
+            'fetched_at' => $record->fetched_at ?? now(),
+        ]);
     }
 }
