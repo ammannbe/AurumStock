@@ -112,6 +112,25 @@ class ProductResource extends Resource
     }
 
     /**
+     * Only manufacturers actually present in the visible products, labelled
+     * through the enum where the stored value is a known case.
+     *
+     * @return array<string, string>
+     */
+    protected static function manufacturerFilterOptions(): array
+    {
+        return static::getEloquentQuery()
+            ->whereNotNull('manufacturer')
+            ->distinct()
+            ->orderBy('manufacturer')
+            ->pluck('manufacturer')
+            ->mapWithKeys(fn (string $value): array => [
+                $value => Manufacturer::tryFrom($value)?->label() ?? $value,
+            ])
+            ->all();
+    }
+
+    /**
      * @return array<int, string>
      */
     protected static function depositoryOptionsForCurrentUser(): array
@@ -1056,7 +1075,9 @@ class ProductResource extends Resource
                 ->toggleable(isToggledHiddenByDefault: true),
             TextColumn::make('manufacturer')
                 ->label(__('Manufacturer'))
-                ->getStateUsing(fn ($record) => $record->manufacturer ? Manufacturer::from($record->manufacturer)->label() : '-')
+                ->getStateUsing(fn ($record): string => $record->manufacturer
+                    ? (Manufacturer::tryFrom($record->manufacturer)?->label() ?? $record->manufacturer)
+                    : '-')
                 ->toggleable(isToggledHiddenByDefault: true),
             TextColumn::make('country_of_origin')->label(__('Country'))->toggleable(isToggledHiddenByDefault: true),
             TextColumn::make('fineness')->label(__('Fineness'))->toggleable(isToggledHiddenByDefault: true),
@@ -1104,6 +1125,11 @@ class ProductResource extends Resource
             SelectFilter::make('material')->options(collect(Material::cases())->mapWithKeys(fn ($c) => [$c->value => $c->label()])->toArray()),
             SelectFilter::make('type')->options(collect(ProductType::cases())->mapWithKeys(fn ($c) => [$c->value => $c->label()])->toArray()),
             SelectFilter::make('depository_id')->label(__('Depository'))->options(fn (): array => static::depositoryOptionsForCurrentUser()),
+            SelectFilter::make('manufacturer')
+                ->label(__('Manufacturer'))
+                ->options(fn (): array => static::manufacturerFilterOptions())
+                ->searchable()
+                ->multiple(),
             SelectFilter::make('year')->options(fn () => Product::query()->distinct()->pluck('year', 'year')->filter()->toArray()),
             SelectFilter::make('price_currency')->label(__('Purchase Currency'))->options(fn () => Product::query()->distinct()->pluck('price_currency', 'price_currency')->filter()->toArray()),
             SelectFilter::make('tax_year')
