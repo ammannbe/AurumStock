@@ -163,7 +163,7 @@ class Product extends Model
                     return null;
                 }
 
-                $priceInUSD = $this->price / $exchange->value;
+                $priceInUSD = ($this->price / $exchange->value) * $this->amount;
 
                 return ($materialValue - $priceInUSD) / $priceInUSD * 100;
             },

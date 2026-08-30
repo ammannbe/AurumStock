@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Enums\Material;
 use App\Models\StockPrice;
 use App\Models\StockPriceHistory;
+use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Http;
 
@@ -128,12 +129,17 @@ class FetchStockPrices extends Command
                     continue;
                 }
 
-                $stock = StockPrice::updateOrCreate(
+                $fetchedAt = Carbon::parse($date)->startOfDay();
+
+                $stock = StockPrice::firstOrCreate(
                     ['material' => $materialValue],
-                    ['price' => $price, 'fetched_at' => $date.' 00:00:00']
+                    ['price' => $price, 'fetched_at' => $fetchedAt]
                 );
 
-                $fetchedAt = $stock->fetched_at ?? $date.' 00:00:00';
+                // The latest price only moves forward, never back to an older import.
+                if ($stock->fetched_at === null || $fetchedAt->greaterThanOrEqualTo($stock->fetched_at)) {
+                    $stock->update(['price' => $price, 'fetched_at' => $fetchedAt]);
+                }
 
                 $updated = StockPriceHistory::updateOrCreate([
                     'stock_price_id' => $stock->id,

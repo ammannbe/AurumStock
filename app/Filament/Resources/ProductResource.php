@@ -22,6 +22,7 @@ use App\Models\User;
 use App\Support\CurrencyConverter;
 use App\Support\MediaTypes;
 use App\Support\ProductSpreadsheetExporter;
+use App\Support\ProductStatistics;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
@@ -928,23 +929,9 @@ class ProductResource extends Resource
                                 return 0;
                             }
 
-                            $products = Product::with(['exchange', 'stockPrice'])->whereIn('id', $ids)->get();
-                            $totalPurchaseUsd = $products->sum(function (Product $p) {
-                                $price = $p->price ?? 0;
-                                $exchangeValue = (float) ($p->exchange?->getAttribute('value') ?? 0);
-                                $priceInUSD = ($price && $exchangeValue > 0) ? $price / $exchangeValue : 0;
-
-                                return $priceInUSD * ($p->amount ?? 1);
-                            });
-                            $totalMaterialUsd = $products->sum(function (Product $p) {
-                                return ($p->material_value_total ?? 0) * ($p->amount ?? 1);
-                            });
-
-                            if ($totalPurchaseUsd <= 0) {
-                                return 0;
-                            }
-
-                            return ($totalMaterialUsd - $totalPurchaseUsd) / $totalPurchaseUsd * 100;
+                            return ProductStatistics::priceTrend(
+                                Product::with(['exchange', 'stockPrice'])->whereIn('id', $ids)->get()
+                            );
                         }),
                     Summarizer::make()
                         ->label(Material::Silver->label())
@@ -957,23 +944,9 @@ class ProductResource extends Resource
                                 return 0;
                             }
 
-                            $products = Product::with(['exchange', 'stockPrice'])->whereIn('id', $ids)->get();
-                            $totalPurchaseUsd = $products->sum(function (Product $p) {
-                                $price = $p->price ?? 0;
-                                $exchangeValue = (float) ($p->exchange?->getAttribute('value') ?? 0);
-                                $priceInUSD = ($price && $exchangeValue > 0) ? $price / $exchangeValue : 0;
-
-                                return $priceInUSD * ($p->amount ?? 1);
-                            });
-                            $totalMaterialUsd = $products->sum(function (Product $p) {
-                                return ($p->material_value_total ?? 0) * ($p->amount ?? 1);
-                            });
-
-                            if ($totalPurchaseUsd <= 0) {
-                                return 0;
-                            }
-
-                            return ($totalMaterialUsd - $totalPurchaseUsd) / $totalPurchaseUsd * 100;
+                            return ProductStatistics::priceTrend(
+                                Product::with(['exchange', 'stockPrice'])->whereIn('id', $ids)->get()
+                            );
                         }),
                     Summarizer::make()
                         ->label(Material::Platinum->label())
@@ -986,23 +959,9 @@ class ProductResource extends Resource
                                 return 0;
                             }
 
-                            $products = Product::with(['exchange', 'stockPrice'])->whereIn('id', $ids)->get();
-                            $totalPurchaseUsd = $products->sum(function (Product $p) {
-                                $price = $p->price ?? 0;
-                                $exchangeValue = (float) ($p->exchange?->getAttribute('value') ?? 0);
-                                $priceInUSD = ($price && $exchangeValue > 0) ? $price / $exchangeValue : 0;
-
-                                return $priceInUSD * ($p->amount ?? 1);
-                            });
-                            $totalMaterialUsd = $products->sum(function (Product $p) {
-                                return ($p->material_value_total ?? 0) * ($p->amount ?? 1);
-                            });
-
-                            if ($totalPurchaseUsd <= 0) {
-                                return 0;
-                            }
-
-                            return ($totalMaterialUsd - $totalPurchaseUsd) / $totalPurchaseUsd * 100;
+                            return ProductStatistics::priceTrend(
+                                Product::with(['exchange', 'stockPrice'])->whereIn('id', $ids)->get()
+                            );
                         }),
                     Summarizer::make()
                         ->label(Material::Palladium->label())
@@ -1015,23 +974,9 @@ class ProductResource extends Resource
                                 return 0;
                             }
 
-                            $products = Product::with(['exchange', 'stockPrice'])->whereIn('id', $ids)->get();
-                            $totalPurchaseUsd = $products->sum(function (Product $p) {
-                                $price = $p->price ?? 0;
-                                $exchangeValue = (float) ($p->exchange?->getAttribute('value') ?? 0);
-                                $priceInUSD = ($price && $exchangeValue > 0) ? $price / $exchangeValue : 0;
-
-                                return $priceInUSD * ($p->amount ?? 1);
-                            });
-                            $totalMaterialUsd = $products->sum(function (Product $p) {
-                                return ($p->material_value_total ?? 0) * ($p->amount ?? 1);
-                            });
-
-                            if ($totalPurchaseUsd <= 0) {
-                                return 0;
-                            }
-
-                            return ($totalMaterialUsd - $totalPurchaseUsd) / $totalPurchaseUsd * 100;
+                            return ProductStatistics::priceTrend(
+                                Product::with(['exchange', 'stockPrice'])->whereIn('id', $ids)->get()
+                            );
                         }),
                     Summarizer::make()
                         ->label(__('Total'))
@@ -1042,23 +987,10 @@ class ProductResource extends Resource
                             if (empty($ids)) {
                                 return 0;
                             }
-                            $products = Product::with(['exchange', 'stockPrice'])->whereIn('id', $ids)->get();
-                            $totalPurchaseUsd = $products->sum(function (Product $p) {
-                                $price = $p->price ?? 0;
-                                $exchangeValue = (float) ($p->exchange?->getAttribute('value') ?? 0);
-                                $priceInUSD = ($price && $exchangeValue > 0) ? $price / $exchangeValue : 0;
 
-                                return $priceInUSD;
-                            });
-                            $totalMaterialUsd = $products->sum(function (Product $p) {
-                                return $p->material_value_total ?? 0;
-                            });
-
-                            if ($totalPurchaseUsd <= 0) {
-                                return 0;
-                            }
-
-                            return ($totalMaterialUsd - $totalPurchaseUsd) / $totalPurchaseUsd * 100;
+                            return ProductStatistics::priceTrend(
+                                Product::with(['exchange', 'stockPrice'])->whereIn('id', $ids)->get()
+                            );
                         }),
                 ]),
             TextColumn::make('year')->label(__('Year'))->sortable()->toggleable(),

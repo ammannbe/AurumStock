@@ -42,10 +42,13 @@ class ImportHistoricalStockPrices extends Command
             ['price' => $priceValue, 'fetched_at' => $fetchedAt]
         );
 
-        $stock->update([
-            'price' => $priceValue,
-            'fetched_at' => $fetchedAt,
-        ]);
+        // The latest price only moves forward, never back to an older import.
+        if ($stock->fetched_at === null || $fetchedAt->greaterThanOrEqualTo($stock->fetched_at)) {
+            $stock->update([
+                'price' => $priceValue,
+                'fetched_at' => $fetchedAt,
+            ]);
+        }
 
         $exists = StockPriceHistory::query()
             ->where('stock_price_id', $stock->id)
