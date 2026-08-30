@@ -2,6 +2,7 @@
 
 namespace App\Filament\UserResources;
 
+use App\Enums\FaceValueCurrency;
 use App\Enums\Manufacturer;
 use App\Enums\Material;
 use App\Enums\ProductType;
@@ -121,7 +122,13 @@ class ProductTemplateResource extends Resource
                     ->nullable()
                     ->columnSpan(2),
                 TextInput::make('mintage')->label(__('Mintage'))->numeric()->nullable()->columnSpan(4),
-                TextInput::make('face_value')->label(__('Face Value'))->numeric()->nullable()->columnSpan(4),
+                TextInput::make('face_value')->label(__('Face Value'))->numeric()->nullable()->columnSpan(2),
+                Select::make('face_value_currency')
+                    ->label(__('Face Value Currency'))
+                    ->options(FaceValueCurrency::toArray())
+                    ->searchable()
+                    ->nullable()
+                    ->columnSpan(2),
             ])->columns(8)->columnSpanFull(),
 
             Section::make(__('Look'))->schema([

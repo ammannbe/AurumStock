@@ -21,6 +21,7 @@ class ProductTemplateFactory extends Factory
             'weight' => $this->faker->randomFloat(4, 0.1, 1000),
             'weight_unit' => 1,
             'face_value' => 20,
+            'face_value_currency' => 'CHF',
             'year' => $this->faker->numberBetween(1900, 2026),
             'size' => '35 mm',
             'front_image_path' => null,

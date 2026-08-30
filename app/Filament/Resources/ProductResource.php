@@ -3,6 +3,7 @@
 namespace App\Filament\Resources;
 
 use App\Enums\Currency;
+use App\Enums\FaceValueCurrency;
 use App\Enums\Fineness;
 use App\Enums\Manufacturer;
 use App\Enums\Material;
@@ -272,6 +273,7 @@ class ProductResource extends Resource
                         $set('fineness', $template->fineness);
                         $set('mintage', $template->mintage);
                         $set('face_value', $template->face_value);
+                        $set('face_value_currency', $template->face_value_currency);
                         $set('front_image_path', $template->front_image_path);
                         $set('back_image_path', $template->back_image_path);
                         $set('text_front', $template->text_front);
@@ -388,9 +390,16 @@ class ProductResource extends Resource
 
             Section::make(__('Financial'))->schema([
                 TextInput::make('face_value')
+                    ->numeric()
                     ->nullable()
                     ->label(__('Face Value'))
-                    ->columnSpan(4),
+                    ->columnSpan(2),
+                Select::make('face_value_currency')
+                    ->label(__('Face Value Currency'))
+                    ->options(FaceValueCurrency::toArray())
+                    ->searchable()
+                    ->nullable()
+                    ->columnSpan(2),
                 TextInput::make('price')
                     ->numeric()
                     ->nullable()

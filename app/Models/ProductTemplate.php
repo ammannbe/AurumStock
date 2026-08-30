@@ -27,6 +27,7 @@ class ProductTemplate extends Model
         'weight',
         'weight_unit',
         'face_value',
+        'face_value_currency',
         'year',
         'size',
         'front_image_path',
@@ -62,6 +63,7 @@ class ProductTemplate extends Model
         'weight',
         'weight_unit',
         'face_value',
+        'face_value_currency',
         'year',
         'size',
         'front_image_path',
@@ -82,6 +84,7 @@ class ProductTemplate extends Model
      */
     private const FIELD_LABELS = [
         'weight' => 'Weight per Item',
+        'face_value_currency' => 'Face Value Currency',
         'front_image_path' => 'Front (image side)',
         'back_image_path' => 'Back (value side)',
         'country_of_origin' => 'Country of Origin',
