@@ -41,6 +41,7 @@ class ProductPriceHistoryChartWidget extends ChartWidget
         '1y' => 365,
         '5y' => 1825,
         'purchase' => null,
+        'year' => null,
         'all' => null,
     ];
 
@@ -84,7 +85,11 @@ class ProductPriceHistoryChartWidget extends ChartWidget
      */
     private function defaultFilters(): array
     {
-        $preset = $this->record?->purchase_date ? 'purchase' : 'all';
+        $preset = match (true) {
+            $this->record?->purchase_date !== null => 'purchase',
+            $this->record?->year !== null => 'year',
+            default => 'all',
+        };
 
         [$start, $end] = $this->rangeForPreset($preset);
 
@@ -107,6 +112,15 @@ class ProductPriceHistoryChartWidget extends ChartWidget
 
             return [
                 $purchaseDate ? $purchaseDate->toDateString() : $this->earliestRecordedDay(),
+                $end,
+            ];
+        }
+
+        if ($preset === 'year') {
+            $year = $this->record?->year;
+
+            return [
+                $year ? Carbon::create($year, 1, 1)->toDateString() : $this->earliestRecordedDay(),
                 $end,
             ];
         }
@@ -142,6 +156,7 @@ class ProductPriceHistoryChartWidget extends ChartWidget
                     ->label(__('Period'))
                     ->options(fn (): array => array_filter([
                         'purchase' => $this->record?->purchase_date ? __('Since purchase') : null,
+                        'year' => $this->record?->year ? __('Since product year') : null,
                         '1m' => __('1 month'),
                         '3m' => __('3 months'),
                         '1y' => __('1 year'),

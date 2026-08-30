@@ -28,7 +28,7 @@ class ProductPriceHistoryChartTest extends TestCase
         }
     }
 
-    private function makeProduct(?string $purchaseDate): Product
+    private function makeProduct(?string $purchaseDate, ?int $year = null): Product
     {
         $user = User::factory()->create();
         $depository = Depository::factory()->create(['user_id' => $user->id]);
@@ -40,6 +40,7 @@ class ProductPriceHistoryChartTest extends TestCase
             'depository_id' => $depository->id,
             'material' => 1,
             'purchase_date' => $purchaseDate,
+            'year' => $year,
         ]);
     }
 
@@ -71,10 +72,21 @@ class ProductPriceHistoryChartTest extends TestCase
         $this->assertSame(now()->subDays(100)->toDateString(), $widget->filters['startDate']);
     }
 
-    public function test_it_uses_the_whole_period_without_a_purchase_date(): void
+    public function test_it_starts_at_the_product_year_without_a_purchase_date(): void
     {
         $this->seedHistory();
-        $product = $this->makeProduct(null);
+        $product = $this->makeProduct(null, (int) now()->subYear()->format('Y'));
+
+        $widget = $this->widgetFor($product);
+
+        $this->assertSame('year', $widget->filters['preset']);
+        $this->assertSame(now()->subYear()->startOfYear()->toDateString(), $widget->filters['startDate']);
+    }
+
+    public function test_it_uses_the_whole_period_without_a_purchase_date_or_year(): void
+    {
+        $this->seedHistory();
+        $product = $this->makeProduct(null, null);
 
         $widget = $this->widgetFor($product);
 
