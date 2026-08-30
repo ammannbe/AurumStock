@@ -14,12 +14,19 @@ enum FaceValueCurrency: string
     case CNY = 'CNY';
     case EUR = 'EUR';
     case GBP = 'GBP';
+    case JPY = 'JPY';
     case MXN = 'MXN';
     case MNT = 'MNT';
     case NZD = 'NZD';
     case RUB = 'RUB';
     case USD = 'USD';
     case ZAR = 'ZAR';
+
+    // Historic denominations without an active ISO code.
+    case KRONE = 'KRONE';
+    case SCHILLING = 'SCHILLING';
+    case FRANC = 'FRANC';
+    case FLORIN = 'FLORIN';
 
     public function label(): string
     {
@@ -35,12 +42,17 @@ enum FaceValueCurrency: string
             self::CNY => 'Chinese Yuan',
             self::EUR => 'Euro',
             self::GBP => 'British Pound',
+            self::JPY => 'Japanese Yen',
             self::MXN => 'Mexican Peso',
             self::MNT => 'Mongolian Tugrik',
             self::NZD => 'New Zealand Dollar',
             self::RUB => 'Russian Ruble',
             self::USD => 'US Dollar',
             self::ZAR => 'South African Rand',
+            self::KRONE => 'Austro-Hungarian Krone',
+            self::SCHILLING => 'Austrian Schilling',
+            self::FRANC => 'French Franc',
+            self::FLORIN => 'Austro-Hungarian Florin',
         };
     }
 

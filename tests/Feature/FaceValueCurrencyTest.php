@@ -114,8 +114,40 @@ class FaceValueCurrencyTest extends TestCase
         $this->assertSame('USD', $template->fresh()->face_value_currency);
     }
 
+    public function test_it_stores_a_historic_currency_with_a_long_code(): void
+    {
+        $user = User::factory()->create();
+        $depository = Depository::factory()->create(['user_id' => $user->id]);
+
+        $product = Product::factory()->create([
+            'user_id' => $user->id,
+            'depository_id' => $depository->id,
+            'face_value' => 100,
+            'face_value_currency' => FaceValueCurrency::SCHILLING->value,
+        ]);
+
+        $template = ProductTemplate::factory()->create([
+            'face_value' => 100,
+            'face_value_currency' => FaceValueCurrency::SCHILLING->value,
+        ]);
+
+        $this->assertSame('SCHILLING', $product->fresh()->face_value_currency);
+        $this->assertSame('SCHILLING', $template->fresh()->face_value_currency);
+    }
+
+    public function test_it_offers_the_historic_denominations(): void
+    {
+        $options = FaceValueCurrency::toArray();
+
+        foreach (['KRONE', 'SCHILLING', 'FRANC', 'FLORIN', 'JPY'] as $code) {
+            $this->assertSame($code, FaceValueCurrency::from($code)->value);
+            $this->assertArrayHasKey($code, $options);
+        }
+    }
+
     public function test_it_suggests_a_currency_for_a_country(): void
     {
+        $this->assertSame(FaceValueCurrency::EUR, FaceValueCurrency::forCountry('AT'));
         $this->assertSame(FaceValueCurrency::CHF, FaceValueCurrency::forCountry('CH'));
         $this->assertSame(FaceValueCurrency::NZD, FaceValueCurrency::forCountry('CK'));
         $this->assertSame(FaceValueCurrency::MNT, FaceValueCurrency::forCountry('MN'));
