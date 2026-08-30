@@ -2,10 +2,13 @@
 
 namespace Tests\Feature;
 
+use App\Enums\Currency;
+use App\Filament\Resources\ProductResource\Pages\CreateProduct;
 use App\Models\Depository;
 use App\Models\Product;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 class ProductViewsTest extends TestCase
@@ -22,6 +25,30 @@ class ProductViewsTest extends TestCase
 
         $response = $this->get('/app/products/create');
         $response->assertStatus(200);
+    }
+
+    public function test_the_create_form_defaults_to_the_profile_currency(): void
+    {
+        $user = User::factory()->create(['preferred_currency' => Currency::CHF]);
+        Depository::factory()->create(['user_id' => $user->id]);
+
+        $this->actingAs($user);
+
+        Livewire::test(CreateProduct::class)
+            ->assertSchemaStateSet(['price_currency' => Currency::CHF->value]);
+    }
+
+    public function test_the_media_repeater_uses_a_translated_add_label(): void
+    {
+        $user = User::factory()->create();
+        $this->actingAs($user);
+        $this->app->setLocale('de');
+
+        $response = $this->get('/app/products/create');
+
+        $response->assertStatus(200);
+        $response->assertSee('Medium hinzufügen', escape: false);
+        $response->assertDontSee('Add to Zusätzliche Medien', escape: false);
     }
 
     public function test_user_can_create_product_via_model(): void

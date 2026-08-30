@@ -32,6 +32,7 @@ use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\Repeater\TableColumn;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -393,6 +394,7 @@ class ProductResource extends Resource
                     ->numeric()
                     ->nullable()
                     ->label(__('Face Value'))
+                    ->placeholder(__('Nominal value printed on the item'))
                     ->columnSpan(2),
                 Select::make('face_value_currency')
                     ->label(__('Face Value Currency'))
@@ -412,6 +414,7 @@ class ProductResource extends Resource
                     ->options(Currency::toArray())
                     ->searchable()
                     ->nullable()
+                    ->default(fn (): string => CurrencyConverter::preferredCode())
                     ->columnSpan(2),
 
                 DatePicker::make('purchase_date')
@@ -454,6 +457,12 @@ class ProductResource extends Resource
                     ->columnSpan(4),
                 Repeater::make('assets')
                     ->label(__('Additional Media'))
+                    ->addActionLabel(__('Add media'))
+                    ->table([
+                        TableColumn::make(__('Type'))->width('12rem'),
+                        TableColumn::make(__('Label')),
+                        TableColumn::make(__('File')),
+                    ])
                     ->schema([
                         Select::make('type')
                             ->label(__('Type'))
@@ -461,6 +470,7 @@ class ProductResource extends Resource
                                 'image' => __('Image'),
                                 'video' => __('Video'),
                             ])
+                            ->default('image')
                             ->required(),
                         TextInput::make('label')->label(__('Label'))->nullable(),
                         FileUpload::make('path')
@@ -469,7 +479,8 @@ class ProductResource extends Resource
                             ->disk('public')
                             ->required(),
                     ])
-                    ->columns(3)
+                    ->reorderable()
+                    ->collapsible()
                     ->defaultItems(0)
                     ->columnSpanFull(),
             ])->columns(8)->columnSpanFull(),
