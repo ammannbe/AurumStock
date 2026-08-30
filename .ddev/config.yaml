@@ -1,7 +1,7 @@
 name: AurumStock
 type: laravel
 docroot: public
-php_version: "8.4"
+php_version: "8.5"
 webserver_type: nginx-fpm
 xdebug_enabled: false
 additional_hostnames: []
@@ -18,6 +18,8 @@ web_extra_exposed_ports:
       container_port: 5173
       http_port: 5172
       https_port: 5173
+upload_dirs:
+  - ../storage/app
 
 # Key features of DDEV's config.yaml:
 
