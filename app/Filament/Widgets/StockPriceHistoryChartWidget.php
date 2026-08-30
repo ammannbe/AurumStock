@@ -5,7 +5,10 @@ namespace App\Filament\Widgets;
 use App\Enums\Material;
 use App\Support\CurrencyConverter;
 use Carbon\Carbon;
+use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Select;
+use Filament\Schemas\Components\Actions;
 use Filament\Schemas\Schema;
 use Filament\Widgets\ChartWidget;
 use Filament\Widgets\ChartWidget\Concerns\HasFiltersSchema;
@@ -26,20 +29,148 @@ class StockPriceHistoryChartWidget extends ChartWidget
         return __('Stock Price History').' ('.CurrencyConverter::preferredCode().')';
     }
 
+    /**
+     * Preset ranges, mapped to the number of days they span. Null means all data.
+     */
+    private const PRESETS = [
+        '1d' => 1,
+        '1m' => 30,
+        '3m' => 90,
+        '1y' => 365,
+        '5y' => 1825,
+        'all' => null,
+    ];
+
+    private const DEFAULT_PRESET = '1y';
+
+    private const SESSION_KEY = 'widgets.stock_price_history.filters';
+
+    // Runs after the trait fills the schema defaults, so stored filters win.
+    public function mountHasFiltersSchema(): void
+    {
+        $stored = session(self::SESSION_KEY);
+
+        $this->filters = is_array($stored) && $stored !== []
+            ? $stored
+            : $this->defaultFilters();
+    }
+
+    public function updatedFilters(mixed $value, ?string $key = null): void
+    {
+        $preset = $this->filters['preset'] ?? null;
+
+        if ($key === 'preset' && is_string($preset) && $preset !== 'custom') {
+            [$this->filters['startDate'], $this->filters['endDate']] = $this->rangeForPreset($preset);
+        }
+
+        // Editing a date by hand no longer matches the chosen preset.
+        if (in_array($key, ['startDate', 'endDate'], true)) {
+            $this->filters['preset'] = $this->presetForCurrentDates() ?? 'custom';
+        }
+
+        session([self::SESSION_KEY => $this->filters]);
+    }
+
+    public function resetFilters(): void
+    {
+        $this->filters = $this->defaultFilters();
+
+        session()->forget(self::SESSION_KEY);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function defaultFilters(): array
+    {
+        [$start, $end] = $this->rangeForPreset(self::DEFAULT_PRESET);
+
+        return [
+            'preset' => self::DEFAULT_PRESET,
+            'startDate' => $start,
+            'endDate' => $end,
+        ];
+    }
+
+    /**
+     * @return array{0: string, 1: string}
+     */
+    private function rangeForPreset(string $preset): array
+    {
+        $end = now()->toDateString();
+
+        // 'all' maps to null, so check the key rather than using ?? here.
+        $days = array_key_exists($preset, self::PRESETS)
+            ? self::PRESETS[$preset]
+            : self::PRESETS[self::DEFAULT_PRESET];
+
+        if ($days === null) {
+            $earliest = DB::table('stock_price_histories')
+                ->selectRaw('MIN(DATE(COALESCE(fetched_at, created_at))) as earliest_day')
+                ->first()?->earliest_day;
+
+            return [$earliest ? (string) $earliest : now()->subYear()->toDateString(), $end];
+        }
+
+        return [now()->subDays($days)->toDateString(), $end];
+    }
+
+    private function presetForCurrentDates(): ?string
+    {
+        $start = $this->filters['startDate'] ?? null;
+        $end = $this->filters['endDate'] ?? null;
+
+        if (! is_string($start) || ! is_string($end)) {
+            return null;
+        }
+
+        foreach (array_keys(self::PRESETS) as $preset) {
+            [$presetStart, $presetEnd] = $this->rangeForPreset($preset);
+
+            if ($presetStart === $start && $presetEnd === $end) {
+                return $preset;
+            }
+        }
+
+        return null;
+    }
+
     public function filtersSchema(Schema $schema): Schema
     {
         return $schema
             ->components([
+                Select::make('preset')
+                    ->label(__('Period'))
+                    ->options([
+                        '1d' => __('1 day'),
+                        '1m' => __('1 month'),
+                        '3m' => __('3 months'),
+                        '1y' => __('1 year'),
+                        '5y' => __('5 years'),
+                        'all' => __('All'),
+                        'custom' => __('Custom'),
+                    ])
+                    ->default(self::DEFAULT_PRESET)
+                    ->selectablePlaceholder(false)
+                    ->native(false),
                 DatePicker::make('startDate')
                     ->label(__('Start Date'))
-                    ->default(now()->subMonth()->toDateString())
+                    ->default(fn (): string => $this->rangeForPreset(self::DEFAULT_PRESET)[0])
                     ->native(false),
                 DatePicker::make('endDate')
                     ->label(__('End Date'))
                     ->default(now()->toDateString())
                     ->native(false),
+                Actions::make([
+                    Action::make('resetFilters')
+                        ->label(__('Reset'))
+                        ->icon('heroicon-m-arrow-path')
+                        ->color('gray')
+                        ->link()
+                        ->action(fn () => $this->resetFilters()),
+                ])->columnSpanFull(),
             ])
-            ->columns(2);
+            ->columns(3);
     }
 
     /**
@@ -166,8 +297,10 @@ class StockPriceHistoryChartWidget extends ChartWidget
      */
     protected function resolveDateRange(): array
     {
-        $startDate = Carbon::parse($this->filters['startDate'] ?? now()->subMonth()->toDateString());
-        $endDate = Carbon::parse($this->filters['endDate'] ?? now()->toDateString());
+        $defaults = $this->defaultFilters();
+
+        $startDate = Carbon::parse($this->filters['startDate'] ?? $defaults['startDate']);
+        $endDate = Carbon::parse($this->filters['endDate'] ?? $defaults['endDate']);
 
         if ($startDate->gt($endDate)) {
             [$startDate, $endDate] = [$endDate, $startDate];
