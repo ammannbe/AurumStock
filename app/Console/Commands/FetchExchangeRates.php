@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\Exchange;
+use App\Models\ExchangeHistory;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Http;
 
@@ -47,8 +48,16 @@ class FetchExchangeRates extends Command
         // Support both common shapes: 'rates' and 'conversion_rates'
         $rates = $data['rates'] ?? $data['conversion_rates'] ?? [];
 
+        $fetchedAt = now();
+
         foreach ($rates as $currency => $value) {
-            Exchange::updateOrCreate(['currency' => $currency], ['value' => $value, 'fetched_at' => now()]);
+            $exchange = Exchange::updateOrCreate(['currency' => $currency], ['value' => $value, 'fetched_at' => $fetchedAt]);
+
+            ExchangeHistory::updateOrCreate(
+                ['exchange_id' => $exchange->id, 'fetched_at' => $fetchedAt->copy()->startOfDay()],
+                ['value' => $value],
+            );
+
             $this->info("{$currency}: {$value}");
         }
 

@@ -61,11 +61,16 @@ class ProductPriceHistoryChartWidget extends ChartWidget
 
         $interval = $this->resolveInterval($rows->count());
 
+        // Convert each day at the rate that applied then, not at today's rate.
+        $ratesByDay = CurrencyConverter::ratesForDays(
+            $rows->map(fn ($row): string => (string) $row->day)->unique()->values()->all()
+        );
+
         // Bucketing happens in PHP so the query stays portable across drivers.
         $buckets = $rows
             ->groupBy(fn ($row): string => $this->bucketKey((string) $row->day, $interval))
             ->map(fn ($group): float => round(
-                CurrencyConverter::fromUsd((float) $group->avg('avg_price') * $troyOunces),
+                $group->avg(fn ($row): float => (float) $row->avg_price * $troyOunces * ($ratesByDay[(string) $row->day] ?? 1.0)),
                 2
             ))
             ->sortKeys();
@@ -124,13 +129,28 @@ class ProductPriceHistoryChartWidget extends ChartWidget
     private function purchasePriceInPreferredCurrency(Product $product): ?float
     {
         $price = $product->price;
-        $rate = (float) ($product->exchange?->getAttribute('value') ?? 0);
+        $currency = $product->price_currency;
 
-        if (! $price || $rate <= 0) {
+        if (! $price || ! $currency) {
             return null;
         }
 
-        return CurrencyConverter::fromUsd((float) $price / $rate);
+        // The purchase is a fixed historical amount, so convert at the rate of that day.
+        $purchaseDate = $product->purchase_date;
+
+        $rate = $purchaseDate
+            ? CurrencyConverter::rateOn($purchaseDate, $currency)
+            : CurrencyConverter::rate($currency);
+
+        if ($rate <= 0) {
+            return null;
+        }
+
+        $priceInUsd = (float) $price / $rate;
+
+        return $purchaseDate
+            ? CurrencyConverter::fromUsdOn($priceInUsd, $purchaseDate)
+            : CurrencyConverter::fromUsd($priceInUsd);
     }
 
     protected function getType(): string

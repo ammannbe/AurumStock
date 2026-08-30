@@ -69,9 +69,20 @@ class StockPriceHistoryChartWidget extends ChartWidget
             ->map(fn ($row): array => [
                 'material' => (int) $row->material,
                 'day' => (string) $row->day,
-                'avg_price' => CurrencyConverter::fromUsd((float) $row->avg_price),
+                'avg_price_usd' => (float) $row->avg_price,
             ])
             ->values();
+
+        // Convert each day at the rate that applied then, not at today's rate.
+        $ratesByDay = CurrencyConverter::ratesForDays(
+            $rows->pluck('day')->unique()->values()->all()
+        );
+
+        $rows = $rows->map(fn (array $row): array => [
+            'material' => $row['material'],
+            'day' => $row['day'],
+            'avg_price' => $row['avg_price_usd'] * ($ratesByDay[$row['day']] ?? 1.0),
+        ]);
 
         $dayCount = $rows->pluck('day')->unique()->count();
         $interval = $this->resolveInterval($dayCount);
