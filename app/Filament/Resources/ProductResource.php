@@ -20,6 +20,7 @@ use App\Models\Product;
 use App\Models\ProductTemplate;
 use App\Models\User;
 use App\Support\CurrencyConverter;
+use App\Support\MediaTypes;
 use App\Support\ProductSpreadsheetExporter;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -39,6 +40,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\IconColumn;
@@ -471,12 +473,14 @@ class ProductResource extends Resource
                                 'video' => __('Video'),
                             ])
                             ->default('image')
+                            ->live()
                             ->required(),
                         TextInput::make('label')->label(__('Label'))->nullable(),
                         FileUpload::make('path')
                             ->label(__('File'))
                             ->directory('products/media')
                             ->disk('public')
+                            ->acceptedFileTypes(fn (Get $get): array => MediaTypes::for($get('type')))
                             ->required(),
                     ])
                     ->reorderable()
