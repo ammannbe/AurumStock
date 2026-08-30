@@ -46,6 +46,7 @@ use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\Summarizers\Sum;
 use Filament\Tables\Columns\Summarizers\Summarizer;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\ViewColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -54,7 +55,6 @@ use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class ProductResource extends Resource
@@ -450,34 +450,9 @@ class ProductResource extends Resource
                     default => 'heroicon-m-exclamation-triangle',
                 })
                 ->toggleable(isToggledHiddenByDefault: true),
-            TextColumn::make('front_image_preview')
+            ViewColumn::make('front_image_preview')
                 ->label(__('Image'))
-                ->html()
-                ->getStateUsing(fn ($record) => (function ($record) {
-                    $front = $record->front_image_path ? Storage::disk('public')->url($record->front_image_path) : null;
-                    $back = $record->back_image_path ? Storage::disk('public')->url($record->back_image_path) : null;
-
-                    $src = $front ?? $back;
-
-                    if (! $src) {
-                        return '';
-                    }
-
-                    $frontEsc = e($front);
-                    $backEsc = e($back);
-                    $srcEsc = e($src);
-
-                    $imgStyle = 'height: 3rem; min-height: 3rem; width: 3rem; min-width: 3rem; object-fit: contain; border-radius: 0.375rem; cursor: pointer; margin-right: 0.5rem; cursor: zoom-in;';
-
-                    $dataBackAttr = $back ? " data-back=\"{$backEsc}\"" : '';
-                    $dataFrontAttr = $front ? " data-front=\"{$frontEsc}\"" : '';
-
-                    $altFallback = $front && $back ? $front.'||'.$back : ($front ?? $back);
-                    $altEsc = e($altFallback);
-                    $imgHtml = "<img class=\"product-preview\" src=\"{$srcEsc}\" alt=\"{$altEsc}\"{$dataFrontAttr}{$dataBackAttr} style=\"{$imgStyle}\" />";
-
-                    return $imgHtml;
-                })($record))
+                ->view('filament.tables.columns.product-media-preview')
                 ->toggleable(),
 
             TextColumn::make('weight')
@@ -980,7 +955,7 @@ class ProductResource extends Resource
 
                     return $indicators;
                 }),
-        ])->defaultSort('name')->summaries(pageCondition: false);
+        ])->defaultSort('purchase_date', 'desc')->summaries(pageCondition: false);
     }
 
     public static function getModelLabel(): string

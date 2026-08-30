@@ -29,6 +29,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Filament falls back to its own version for cache busting, which never
+        // changes when our own assets do, so derive one from the asset files.
+        FilamentAsset::appVersion($this->assetVersion());
+
         // Register product preview JS for Filament
         FilamentAsset::register([
             Js::make('product-previews')->package('app'),
@@ -41,5 +45,18 @@ class AppServiceProvider extends ServiceProvider
             'platinum' => Color::Neutral,
             'palladium' => Color::Gray,
         ]);
+    }
+
+    private function assetVersion(): string
+    {
+        $timestamps = array_map(
+            fn (string $path): int => is_file($path) ? (int) filemtime($path) : 0,
+            [
+                public_path('js/app/product-previews.js'),
+                public_path('css/app/overlay.css'),
+            ],
+        );
+
+        return (string) max($timestamps);
     }
 }

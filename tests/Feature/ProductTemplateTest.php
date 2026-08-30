@@ -130,6 +130,27 @@ class ProductTemplateTest extends TestCase
         $this->get('/app/product-templates')->assertStatus(200);
     }
 
+    public function test_the_template_list_renders_all_media_in_the_slider(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+        ProductTemplate::factory()->create([
+            'front_image_path' => 'product-templates/front.jpg',
+            'back_image_path' => 'product-templates/back.jpg',
+            'assets' => [
+                ['type' => 'video', 'label' => 'Clip', 'path' => 'product-templates/media/clip.mp4'],
+            ],
+        ]);
+
+        $this->actingAs($admin);
+
+        $response = $this->get('/app/product-templates');
+
+        $response->assertStatus(200);
+        $response->assertSee('data-gallery', escape: false);
+        $response->assertSee('clip.mp4', escape: false);
+        $response->assertSee('+1', escape: false);
+    }
+
     public function test_template_pages_render_translated_labels(): void
     {
         $admin = User::factory()->create(['is_admin' => true]);

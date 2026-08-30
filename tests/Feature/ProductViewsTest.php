@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\Currency;
 use App\Filament\Resources\ProductResource\Pages\CreateProduct;
+use App\Filament\Resources\ProductResource\Pages\ListProducts;
 use App\Models\Depository;
 use App\Models\Product;
 use App\Models\User;
@@ -49,6 +50,53 @@ class ProductViewsTest extends TestCase
         $response->assertStatus(200);
         $response->assertSee('Medium hinzufügen', escape: false);
         $response->assertDontSee('Add to Zusätzliche Medien', escape: false);
+    }
+
+    public function test_the_products_table_renders_all_media_in_the_slider(): void
+    {
+        $user = User::factory()->create();
+        $depository = Depository::factory()->create(['user_id' => $user->id]);
+
+        Product::factory()->create([
+            'user_id' => $user->id,
+            'depository_id' => $depository->id,
+            'front_image_path' => 'products/front.jpg',
+            'back_image_path' => 'products/back.jpg',
+            'assets' => [
+                ['type' => 'image', 'label' => 'Detail', 'path' => 'products/media/detail.jpg'],
+                ['type' => 'video', 'label' => 'Clip', 'path' => 'products/media/clip.mp4'],
+            ],
+        ]);
+
+        $this->actingAs($user);
+
+        Livewire::test(ListProducts::class)
+            ->assertSee('data-gallery', escape: false)
+            ->assertSee('clip.mp4', escape: false)
+            ->assertSee('+2', escape: false);
+    }
+
+    public function test_the_products_table_is_sorted_by_purchase_date_descending(): void
+    {
+        $user = User::factory()->create();
+        $depository = Depository::factory()->create(['user_id' => $user->id]);
+
+        $older = Product::factory()->create([
+            'user_id' => $user->id,
+            'depository_id' => $depository->id,
+            'purchase_date' => '2020-01-01',
+        ]);
+
+        $newer = Product::factory()->create([
+            'user_id' => $user->id,
+            'depository_id' => $depository->id,
+            'purchase_date' => '2024-06-01',
+        ]);
+
+        $this->actingAs($user);
+
+        Livewire::test(ListProducts::class)
+            ->assertCanSeeTableRecords([$newer, $older], inOrder: true);
     }
 
     public function test_user_can_create_product_via_model(): void

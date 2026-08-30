@@ -25,6 +25,7 @@ use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\ViewColumn;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\Auth;
 
@@ -231,6 +232,10 @@ class ProductTemplateResource extends Resource
                 ->tooltip(fn (Material $state) => $state->label())
                 ->toggleable(),
             TextColumn::make('name')->label(__('Name'))->searchable(),
+            ViewColumn::make('front_image_preview')
+                ->label(__('Image'))
+                ->view('filament.tables.columns.product-media-preview')
+                ->toggleable(),
             TextColumn::make('year')->label(__('Year'))->sortable()->toggleable(),
             TextColumn::make('manufacturer')
                 ->label(__('Manufacturer'))
