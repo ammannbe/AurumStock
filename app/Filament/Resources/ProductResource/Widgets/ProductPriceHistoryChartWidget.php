@@ -14,6 +14,16 @@ class ProductPriceHistoryChartWidget extends ChartWidget
 
     protected ?string $maxHeight = '320px';
 
+    /**
+     * Above this many days the chart falls back to weekly averages.
+     */
+    private const MAX_DAILY_POINTS = 400;
+
+    /**
+     * Above this many points the markers are hidden so the line stays readable.
+     */
+    private const MAX_POINTS_WITH_MARKERS = 60;
+
     public function getHeading(): ?string
     {
         return __('Price Trend').' ('.CurrencyConverter::preferredCode().')';
@@ -49,11 +59,19 @@ class ProductPriceHistoryChartWidget extends ChartWidget
 
         $troyOunces = $product->weight_unit->toTroyOunce((float) $product->weight) * (int) $product->amount;
 
-        $labels = $rows->map(fn ($row): string => Carbon::parse($row->day)->format('Y-m-d'))->all();
+        $interval = $this->resolveInterval($rows->count());
 
-        $values = $rows
-            ->map(fn ($row): float => round(CurrencyConverter::fromUsd((float) $row->avg_price * $troyOunces), 2))
-            ->all();
+        // Bucketing happens in PHP so the query stays portable across drivers.
+        $buckets = $rows
+            ->groupBy(fn ($row): string => $this->bucketKey((string) $row->day, $interval))
+            ->map(fn ($group): float => round(
+                CurrencyConverter::fromUsd((float) $group->avg('avg_price') * $troyOunces),
+                2
+            ))
+            ->sortKeys();
+
+        $labels = $buckets->keys()->all();
+        $values = $buckets->values()->all();
 
         $datasets = [[
             'label' => __('Material Value'),
@@ -62,7 +80,9 @@ class ProductPriceHistoryChartWidget extends ChartWidget
             'backgroundColor' => 'rgba(59, 130, 246, 0.12)',
             'fill' => true,
             'tension' => 0.3,
-            'pointRadius' => 2,
+            'borderWidth' => 2,
+            'pointRadius' => count($labels) <= self::MAX_POINTS_WITH_MARKERS ? 2 : 0,
+            'pointHoverRadius' => 4,
         ]];
 
         $purchasePrice = $this->purchasePriceInPreferredCurrency($product);
@@ -82,6 +102,23 @@ class ProductPriceHistoryChartWidget extends ChartWidget
             'datasets' => $datasets,
             'labels' => $labels,
         ];
+    }
+
+    /**
+     * @return 'day'|'week'
+     */
+    private function resolveInterval(int $dayCount): string
+    {
+        return $dayCount <= self::MAX_DAILY_POINTS ? 'day' : 'week';
+    }
+
+    private function bucketKey(string $day, string $interval): string
+    {
+        $date = Carbon::parse($day);
+
+        return $interval === 'week'
+            ? $date->startOfWeek()->format('Y-m-d')
+            : $date->format('Y-m-d');
     }
 
     private function purchasePriceInPreferredCurrency(Product $product): ?float

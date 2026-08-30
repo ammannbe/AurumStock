@@ -43,6 +43,16 @@ class StockPriceHistoryChartWidget extends ChartWidget
     }
 
     /**
+     * Above this many days the chart falls back to weekly averages.
+     */
+    private const MAX_DAILY_POINTS = 400;
+
+    /**
+     * Above this many points the markers are hidden so the line stays readable.
+     */
+    private const MAX_POINTS_WITH_MARKERS = 60;
+
+    /**
      * @return array<string, mixed>
      */
     protected function getData(): array
@@ -63,23 +73,33 @@ class StockPriceHistoryChartWidget extends ChartWidget
             ])
             ->values();
 
-        $labels = $rows
-            ->pluck('day')
-            ->unique()
-            ->values()
-            ->map(fn (string $day): string => Carbon::parse($day)->format('Y-m-d'))
-            ->all();
+        $dayCount = $rows->pluck('day')->unique()->count();
+        $interval = $this->resolveInterval($dayCount);
+
+        // Bucketing happens in PHP so the query stays portable across drivers.
+        $buckets = $rows
+            ->groupBy(fn (array $row): string => $row['material'].'|'.$this->bucketKey($row['day'], $interval))
+            ->map(fn ($group): array => [
+                'material' => $group->first()['material'],
+                'bucket' => $this->bucketKey($group->first()['day'], $interval),
+                'avg_price' => $group->avg('avg_price'),
+            ])
+            ->values();
+
+        $labels = $buckets->pluck('bucket')->unique()->sort()->values()->all();
+
+        $showPoints = count($labels) <= self::MAX_POINTS_WITH_MARKERS;
 
         $datasets = collect(Material::cases())
-            ->map(function (Material $material) use ($rows, $labels): array {
-                $byDay = $rows
+            ->map(function (Material $material) use ($buckets, $labels, $showPoints): array {
+                $byBucket = $buckets
                     ->where('material', $material->value)
-                    ->keyBy(fn (array $row): string => Carbon::parse($row['day'])->format('Y-m-d'));
+                    ->keyBy('bucket');
 
                 return [
                     'label' => $material->label(),
                     'data' => collect($labels)
-                        ->map(fn (string $label): ?float => isset($byDay[$label]) ? (float) $byDay[$label]['avg_price'] : null)
+                        ->map(fn (string $label): ?float => isset($byBucket[$label]) ? round((float) $byBucket[$label]['avg_price'], 2) : null)
                         ->all(),
                     'borderColor' => match ($material) {
                         Material::Gold => '#eab308',
@@ -95,7 +115,9 @@ class StockPriceHistoryChartWidget extends ChartWidget
                     },
                     'spanGaps' => true,
                     'tension' => 0.3,
-                    'pointRadius' => 2,
+                    'borderWidth' => 2,
+                    'pointRadius' => $showPoints ? 2 : 0,
+                    'pointHoverRadius' => 4,
                 ];
             })
             ->all();
@@ -104,6 +126,23 @@ class StockPriceHistoryChartWidget extends ChartWidget
             'datasets' => $datasets,
             'labels' => $labels,
         ];
+    }
+
+    /**
+     * @return 'day'|'week'
+     */
+    private function resolveInterval(int $dayCount): string
+    {
+        return $dayCount <= self::MAX_DAILY_POINTS ? 'day' : 'week';
+    }
+
+    private function bucketKey(string $day, string $interval): string
+    {
+        $date = Carbon::parse($day);
+
+        return $interval === 'week'
+            ? $date->startOfWeek()->format('Y-m-d')
+            : $date->format('Y-m-d');
     }
 
     protected function getType(): string
