@@ -2,19 +2,14 @@
 
 namespace App\Filament\UserResources;
 
-use App\Enums\Currency;
 use App\Enums\Manufacturer;
 use App\Enums\Material;
-use App\Enums\Packaging;
 use App\Enums\ProductType;
-use App\Enums\Quality;
 use App\Enums\WeightUnit;
 use App\Filament\UserResources\ProductTemplateResource\Pages\CreateProductTemplate;
 use App\Filament\UserResources\ProductTemplateResource\Pages\EditProductTemplate;
 use App\Filament\UserResources\ProductTemplateResource\Pages\ListProductTemplates;
 use App\Models\ProductTemplate;
-use Filament\Forms\Components\Checkbox;
-use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
@@ -63,19 +58,22 @@ class ProductTemplateResource extends Resource
     {
         return $schema->schema([
             Section::make(__('General'))->schema([
-                TextInput::make('name')->required()->maxLength(255)->columnSpanFull(),
+                TextInput::make('name')->label(__('Name'))->required()->maxLength(255)->columnSpan(4),
+                TextInput::make('year')->label(__('Year'))->numeric()->nullable()->columnSpan(1),
                 Select::make('material')
+                    ->label(__('Material'))
                     ->options(collect(Material::cases())->mapWithKeys(fn ($c) => [$c->value => $c->label()])->toArray())
                     ->required()
                     ->default(Material::Gold->value)
                     ->columnSpan(4),
                 Select::make('type')
+                    ->label(__('Type'))
                     ->options(collect(ProductType::cases())->mapWithKeys(fn ($c) => [$c->value => $c->label()])->toArray())
                     ->required()
                     ->default(ProductType::Coin->value)
                     ->columnSpan(4),
-                TextInput::make('year')->numeric()->nullable()->columnSpan(2),
                 Select::make('manufacturer')
+                    ->label(__('Manufacturer'))
                     ->options(collect(Manufacturer::cases())->mapWithKeys(fn ($c) => [$c->value => $c->label()])->toArray())
                     ->searchable()
                     ->nullable()
@@ -105,7 +103,7 @@ class ProductTemplateResource extends Resource
             ])->columns(8)->columnSpanFull(),
 
             Section::make(__('Technical data'))->schema([
-                TextInput::make('size')->nullable()->columnSpan(2),
+                TextInput::make('size')->label(__('Size'))->nullable()->columnSpan(2),
                 TextInput::make('weight')
                     ->label(__('Weight per Item'))
                     ->numeric()
@@ -114,87 +112,33 @@ class ProductTemplateResource extends Resource
                     ->minValue(0)
                     ->columnSpan(2),
                 Select::make('weight_unit')
+                    ->label(__('Weight Unit'))
                     ->options(collect(WeightUnit::cases())->mapWithKeys(fn ($c) => [$c->value => $c->label()])->toArray())
                     ->required()
                     ->columnSpan(2),
-                TextInput::make('amount')
-                    ->numeric()
-                    ->required()
-                    ->default(1)
-                    ->minValue(1)
-                    ->columnSpan(2),
                 TextInput::make('fineness')
-                    ->nullable()
-                    ->columnSpan(4),
-                TextInput::make('mintage')->numeric()->nullable()->columnSpan(4),
-                TextInput::make('face_value')->numeric()->nullable()->columnSpan(2),
-                TextInput::make('reference_number')->nullable()->columnSpan(2),
-                Select::make('quality')
-                    ->options(collect(Quality::cases())->mapWithKeys(fn ($c) => [$c->value => $c->label()])->toArray())
-                    ->searchable()
-                    ->nullable()
-                    ->columnSpan(4),
-                Checkbox::make('certificate')->inline(false)->columnSpan(2),
-                Select::make('packaging')
-                    ->options(collect(Packaging::cases())->mapWithKeys(fn ($c) => [$c->value => $c->label()])->toArray())
-                    ->searchable()
+                    ->label(__('Fineness'))
                     ->nullable()
                     ->columnSpan(2),
-                TextInput::make('price')
-                    ->numeric()
-                    ->nullable()
-                    ->minValue(0)
-                    ->step(0.01)
-                    ->label(__('Total Purchase Price'))
-                    ->columnSpan(2),
-                Select::make('price_currency')
-                    ->options(Currency::toArray())
-                    ->searchable()
-                    ->nullable()
-                    ->columnSpan(2),
-                DatePicker::make('purchase_date')->nullable()->columnSpan(4),
-                TextInput::make('tax_year')
-                    ->numeric()
-                    ->minValue(1900)
-                    ->maxValue(2100)
-                    ->nullable()
-                    ->columnSpan(4),
+                TextInput::make('mintage')->label(__('Mintage'))->numeric()->nullable()->columnSpan(4),
+                TextInput::make('face_value')->label(__('Face Value'))->numeric()->nullable()->columnSpan(4),
             ])->columns(8)->columnSpanFull(),
 
             Section::make(__('Look'))->schema([
                 FileUpload::make('front_image_path')
-                    ->label(__('Front Image'))
+                    ->label(__('Front (image side)'))
                     ->image()
                     ->directory('product-templates')
                     ->disk('public')
                     ->nullable()
                     ->columnSpan(4),
                 FileUpload::make('back_image_path')
-                    ->label(__('Back Image'))
+                    ->label(__('Back (value side)'))
                     ->image()
                     ->directory('product-templates')
                     ->disk('public')
                     ->nullable()
                     ->columnSpan(4),
-                Repeater::make('assets')
-                    ->label(__('Additional Media'))
-                    ->schema([
-                        Select::make('type')
-                            ->options([
-                                'image' => __('Image'),
-                                'video' => __('Video'),
-                            ])
-                            ->required(),
-                        TextInput::make('label')->nullable(),
-                        FileUpload::make('path')
-                            ->label(__('File'))
-                            ->directory('product-templates/media')
-                            ->disk('public')
-                            ->required(),
-                    ])
-                    ->columns(3)
-                    ->defaultItems(0)
-                    ->columnSpanFull(),
                 TextInput::make('text_front')
                     ->label(__('Text Front'))
                     ->nullable()
@@ -205,10 +149,30 @@ class ProductTemplateResource extends Resource
                     ->nullable()
                     ->maxLength(255)
                     ->columnSpan(4),
+                Repeater::make('assets')
+                    ->label(__('Additional Media'))
+                    ->schema([
+                        Select::make('type')
+                            ->label(__('Type'))
+                            ->options([
+                                'image' => __('Image'),
+                                'video' => __('Video'),
+                            ])
+                            ->required(),
+                        TextInput::make('label')->label(__('Label'))->nullable(),
+                        FileUpload::make('path')
+                            ->label(__('File'))
+                            ->directory('product-templates/media')
+                            ->disk('public')
+                            ->required(),
+                    ])
+                    ->columns(3)
+                    ->defaultItems(0)
+                    ->columnSpanFull(),
             ])->columns(8)->columnSpanFull(),
 
             Section::make(__('Notes'))->schema([
-                Textarea::make('notes')->nullable()->columnSpanFull(),
+                Textarea::make('notes')->label(__('Notes'))->nullable()->columnSpanFull(),
             ])->columns(8)->columnSpanFull(),
         ])->columns(8);
     }
@@ -217,11 +181,13 @@ class ProductTemplateResource extends Resource
     {
         return $table->columns([
             IconColumn::make('type')
+                ->label(__('Type'))
                 ->icon(fn (ProductType $state) => $state->icon())
                 ->sortable()
                 ->tooltip(fn (ProductType $state) => $state->label())
                 ->toggleable(),
             TextColumn::make('material')
+                ->label(__('Material'))
                 ->formatStateUsing(fn (Material $state) => $state->symbol())
                 ->sortable()
                 ->badge()
@@ -229,9 +195,16 @@ class ProductTemplateResource extends Resource
                 ->color(fn (Material $state) => $state->color())
                 ->tooltip(fn (Material $state) => $state->label())
                 ->toggleable(),
-            TextColumn::make('name')->searchable(),
-            TextColumn::make('year')->sortable()->toggleable(),
-            TextColumn::make('manufacturer')->sortable()->searchable()->toggleable(),
+            TextColumn::make('name')->label(__('Name'))->searchable(),
+            TextColumn::make('year')->label(__('Year'))->sortable()->toggleable(),
+            TextColumn::make('manufacturer')
+                ->label(__('Manufacturer'))
+                ->formatStateUsing(fn (?string $state): ?string => $state === null
+                    ? null
+                    : (Manufacturer::tryFrom($state)?->label() ?? $state))
+                ->sortable()
+                ->searchable()
+                ->toggleable(),
         ])->defaultSort('name');
     }
 

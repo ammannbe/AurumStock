@@ -2,10 +2,14 @@
 
 namespace App\Models;
 
+use App\Enums\Material;
+use App\Enums\ProductType;
+use App\Enums\WeightUnit;
 use Database\Factories\ProductTemplateFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 
 /**
  * @method static \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\ProductTemplate> factory(...$parameters)
@@ -22,39 +26,71 @@ class ProductTemplate extends Model
         'material',
         'weight',
         'weight_unit',
-        'amount',
         'face_value',
         'year',
-        'reference_number',
         'size',
-        'price',
-        'price_currency',
         'front_image_path',
         'back_image_path',
         'text_front',
         'text_back',
         'assets',
         'notes',
-        'quality',
-        'certificate',
         'manufacturer',
         'country_of_origin',
         'fineness',
-        'packaging',
         'mintage',
-        'purchase_date',
-        'tax_year',
     ];
 
     protected $casts = [
+        'type' => ProductType::class,
+        'material' => Material::class,
+        'weight_unit' => WeightUnit::class,
         'assets' => 'array',
-        'certificate' => 'boolean',
-        'purchase_date' => 'date',
-        'tax_year' => 'integer',
-        'price' => 'decimal:2',
         'weight' => 'decimal:4',
         'mintage' => 'integer',
     ];
+
+    /**
+     * Fields copied to products and covered by the sync hash.
+     *
+     * @var array<int, string>
+     */
+    public const SYNCED_FIELDS = [
+        'name',
+        'type',
+        'material',
+        'weight',
+        'weight_unit',
+        'face_value',
+        'year',
+        'size',
+        'front_image_path',
+        'back_image_path',
+        'text_front',
+        'text_back',
+        'notes',
+        'manufacturer',
+        'country_of_origin',
+        'fineness',
+        'mintage',
+    ];
+
+    /**
+     * Translation keys for synced fields, matching the labels used in the product form.
+     *
+     * @var array<string, string>
+     */
+    private const FIELD_LABELS = [
+        'weight' => 'Weight per Item',
+        'front_image_path' => 'Front (image side)',
+        'back_image_path' => 'Back (value side)',
+        'country_of_origin' => 'Country of Origin',
+    ];
+
+    public static function fieldLabel(string $field): string
+    {
+        return __(self::FIELD_LABELS[$field] ?? Str::headline($field));
+    }
 
     protected static function booted(): void
     {
@@ -65,34 +101,13 @@ class ProductTemplate extends Model
 
     public function calculateSourceHash(): string
     {
-        $payload = [
-            'name' => $this->name,
-            'type' => $this->type,
-            'material' => $this->material,
-            'weight' => $this->weight,
-            'weight_unit' => $this->weight_unit,
-            'amount' => $this->amount,
-            'face_value' => $this->face_value,
-            'year' => $this->year,
-            'reference_number' => $this->reference_number,
-            'size' => $this->size,
-            'price' => $this->price,
-            'price_currency' => $this->price_currency,
-            'front_image_path' => $this->front_image_path,
-            'back_image_path' => $this->back_image_path,
-            'text_front' => $this->text_front,
-            'text_back' => $this->text_back,
-            'notes' => $this->notes,
-            'quality' => $this->quality,
-            'manufacturer' => $this->manufacturer,
-            'country_of_origin' => $this->country_of_origin,
-            'fineness' => $this->fineness,
-            'packaging' => $this->packaging,
-            'mintage' => $this->mintage,
-            'purchase_date' => $this->purchase_date?->toDateString(),
-            'tax_year' => $this->tax_year,
-            'certificate' => $this->certificate,
-        ];
+        $payload = [];
+
+        foreach (self::SYNCED_FIELDS as $field) {
+            $value = $this->getAttribute($field);
+
+            $payload[$field] = $value instanceof \BackedEnum ? $value->value : $value;
+        }
 
         return hash('sha256', json_encode($payload, JSON_THROW_ON_ERROR));
     }
@@ -100,5 +115,19 @@ class ProductTemplate extends Model
     public function products(): HasMany
     {
         return $this->hasMany(Product::class);
+    }
+
+    public static function createFromProduct(Product $product, ?string $name = null): self
+    {
+        $attributes = [];
+
+        foreach (self::SYNCED_FIELDS as $field) {
+            $attributes[$field] = $product->getAttribute($field);
+        }
+
+        $attributes['name'] = $name ?? $product->name;
+        $attributes['assets'] = $product->assets;
+
+        return static::query()->create($attributes);
     }
 }

@@ -28,12 +28,12 @@ return new class extends Migration
             $table->string('text_back')->nullable();
             $table->json('assets')->nullable();
             $table->text('notes')->nullable();
-            $table->tinyInteger('quality')->nullable();
+            $table->string('quality')->nullable();
             $table->boolean('certificate')->default(false);
             $table->string('manufacturer')->nullable();
             $table->string('country_of_origin')->nullable();
             $table->string('fineness')->nullable();
-            $table->tinyInteger('packaging')->nullable();
+            $table->string('packaging')->nullable();
             $table->unsignedInteger('mintage')->nullable();
             $table->date('purchase_date')->nullable();
             $table->unsignedSmallInteger('tax_year')->nullable();

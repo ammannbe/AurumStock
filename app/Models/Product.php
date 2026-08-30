@@ -16,9 +16,13 @@ use Illuminate\Support\Facades\Storage;
 
 /**
  * @property int $id
- * @property int $material
+ * @property Material $material
+ * @property ProductType $type
+ * @property WeightUnit $weight_unit
  * @property float $weight
  * @property int $amount
+ * @property string|null $source_hash
+ * @property int|null $template_id
  * @property string|null $front_image_path
  * @property string|null $back_image_path
  * @property array<int,mixed>|null $assets
@@ -26,6 +30,7 @@ use Illuminate\Support\Facades\Storage;
  * @method static \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Product> factory(...$parameters)
  *
  * @property-read User $owner
+ * @property-read ProductTemplate|null $template
  */
 class Product extends Model
 {
@@ -65,6 +70,22 @@ class Product extends Model
         'purchase_date',
         'tax_year',
     ];
+
+    protected static function booted(): void
+    {
+        // Keep the stored hash in step with the template the product is linked to.
+        static::saving(function (self $product): void {
+            if ($product->template_id === null) {
+                $product->source_hash = null;
+
+                return;
+            }
+
+            if ($product->isDirty('template_id')) {
+                $product->source_hash = $product->template?->source_hash;
+            }
+        });
+    }
 
     protected $casts = [
         'type' => ProductType::class,
@@ -148,6 +169,9 @@ class Product extends Model
         );
     }
 
+    /**
+     * @param  array<string, mixed>  $attributes
+     */
     public static function fromTemplate(ProductTemplate $template, array $attributes = []): self
     {
         $data = [
@@ -158,28 +182,19 @@ class Product extends Model
             'material' => $template->material,
             'weight' => $template->weight,
             'weight_unit' => $template->weight_unit,
-            'amount' => $template->amount,
             'face_value' => $template->face_value,
             'year' => $template->year,
-            'reference_number' => $template->reference_number,
             'size' => $template->size,
-            'price' => $template->price,
-            'price_currency' => $template->price_currency,
             'front_image_path' => $template->front_image_path,
             'back_image_path' => $template->back_image_path,
             'text_front' => $template->text_front,
             'text_back' => $template->text_back,
             'assets' => $template->assets,
             'notes' => $template->notes,
-            'quality' => $template->quality,
-            'certificate' => $template->certificate,
             'manufacturer' => $template->manufacturer,
             'country_of_origin' => $template->country_of_origin,
             'fineness' => $template->fineness,
-            'packaging' => $template->packaging,
             'mintage' => $template->mintage,
-            'purchase_date' => $template->purchase_date,
-            'tax_year' => $template->tax_year,
         ];
 
         return static::query()->create(array_merge($data, $attributes));
@@ -191,9 +206,72 @@ class Product extends Model
             return false;
         }
 
-        return $this->source_hash !== null
-            && $this->template->source_hash !== null
-            && $this->source_hash === $this->template->source_hash;
+        return $this->templateDifferences() === [];
+    }
+
+    /**
+     * Fields where this product differs from its template.
+     *
+     * @return array<int, array{field: string, product: mixed, template: mixed}>
+     */
+    public function templateDifferences(): array
+    {
+        $template = $this->template;
+
+        if (! $template) {
+            return [];
+        }
+
+        $differences = [];
+
+        foreach (ProductTemplate::SYNCED_FIELDS as $field) {
+            $productValue = $this->normalizeForComparison($this->getAttribute($field));
+            $templateValue = $this->normalizeForComparison($template->getAttribute($field));
+
+            if ($productValue !== $templateValue) {
+                $differences[] = [
+                    'field' => $field,
+                    'product' => $productValue,
+                    'template' => $templateValue,
+                ];
+            }
+        }
+
+        return $differences;
+    }
+
+    public function syncFromTemplate(): bool
+    {
+        $template = $this->template;
+
+        if (! $template) {
+            return false;
+        }
+
+        foreach (ProductTemplate::SYNCED_FIELDS as $field) {
+            $this->setAttribute($field, $template->getAttribute($field));
+        }
+
+        $this->source_hash = $template->source_hash;
+
+        return $this->save();
+    }
+
+    private function normalizeForComparison(mixed $value): mixed
+    {
+        if ($value instanceof \BackedEnum) {
+            return $value->value;
+        }
+
+        if ($value instanceof \DateTimeInterface) {
+            return $value->format('Y-m-d');
+        }
+
+        if (is_numeric($value)) {
+            return (string) (float) $value;
+        }
+
+        return $value;
     }
 
     public function deleteMediaField(string $field): void

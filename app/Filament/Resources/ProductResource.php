@@ -34,10 +34,10 @@ use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Set;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\Summarizers\Sum;
@@ -272,18 +272,11 @@ class ProductResource extends Resource
                         $set('fineness', $template->fineness);
                         $set('mintage', $template->mintage);
                         $set('face_value', $template->face_value);
-                        $set('price', $template->price);
-                        $set('price_currency', $template->price_currency);
                         $set('front_image_path', $template->front_image_path);
                         $set('back_image_path', $template->back_image_path);
                         $set('text_front', $template->text_front);
                         $set('text_back', $template->text_back);
                         $set('notes', $template->notes);
-                        $set('quality', $template->quality);
-                        $set('certificate', $template->certificate);
-                        $set('packaging', $template->packaging);
-                        $set('reference_number', $template->reference_number);
-                        $set('amount', $template->amount ?? 1);
                     })
                     ->columnSpanFull(),
                 TextInput::make('name')->required()->maxLength(255)->columnSpan(3),
@@ -427,18 +420,28 @@ class ProductResource extends Resource
 
             Section::make(__('Look'))->schema([
                 FileUpload::make('front_image_path')
-                    ->label(__('Front Image'))
+                    ->label(__('Front (image side)'))
                     ->image()
                     ->directory('products')
                     ->disk('public')
                     ->nullable()
                     ->columnSpan(4),
                 FileUpload::make('back_image_path')
-                    ->label(__('Back Image'))
+                    ->label(__('Back (value side)'))
                     ->image()
                     ->directory('products')
                     ->disk('public')
                     ->nullable()
+                    ->columnSpan(4),
+                TextInput::make('text_front')
+                    ->label(__('Text Front'))
+                    ->nullable()
+                    ->maxLength(255)
+                    ->columnSpan(4),
+                TextInput::make('text_back')
+                    ->label(__('Text Back'))
+                    ->nullable()
+                    ->maxLength(255)
                     ->columnSpan(4),
                 Repeater::make('assets')
                     ->label(__('Additional Media'))
@@ -460,16 +463,6 @@ class ProductResource extends Resource
                     ->columns(3)
                     ->defaultItems(0)
                     ->columnSpanFull(),
-                TextInput::make('text_front')
-                    ->label(__('Text Front'))
-                    ->nullable()
-                    ->maxLength(255)
-                    ->columnSpan(4),
-                TextInput::make('text_back')
-                    ->label(__('Text Back'))
-                    ->nullable()
-                    ->maxLength(255)
-                    ->columnSpan(4),
             ])->columns(8)->columnSpanFull(),
 
             Section::make(__('Notes'))->schema([
@@ -501,6 +494,25 @@ class ProductResource extends Resource
                 ->badge()
                 ->color(fn (int $state): string => $state > 0 ? 'info' : 'gray')
                 ->toggleable(),
+            TextColumn::make('template_sync')
+                ->label(__('Template'))
+                ->badge()
+                ->getStateUsing(fn (Product $record): string => match (true) {
+                    $record->template_id === null => __('No template'),
+                    $record->isSynchronizedWithTemplate() => __('In sync'),
+                    default => __('Outdated'),
+                })
+                ->color(fn (Product $record): string => match (true) {
+                    $record->template_id === null => 'gray',
+                    $record->isSynchronizedWithTemplate() => 'success',
+                    default => 'warning',
+                })
+                ->icon(fn (Product $record): ?string => match (true) {
+                    $record->template_id === null => null,
+                    $record->isSynchronizedWithTemplate() => 'heroicon-m-check-badge',
+                    default => 'heroicon-m-exclamation-triangle',
+                })
+                ->toggleable(isToggledHiddenByDefault: true),
             TextColumn::make('front_image_preview')
                 ->label(__('Image'))
                 ->html()
