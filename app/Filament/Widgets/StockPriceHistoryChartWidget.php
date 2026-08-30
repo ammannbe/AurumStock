@@ -152,15 +152,18 @@ class StockPriceHistoryChartWidget extends ChartWidget
                     ])
                     ->default(self::DEFAULT_PRESET)
                     ->selectablePlaceholder(false)
-                    ->native(false),
+                    ->native(false)
+                    ->columnSpanFull(),
                 DatePicker::make('startDate')
                     ->label(__('Start Date'))
                     ->default(fn (): string => $this->rangeForPreset(self::DEFAULT_PRESET)[0])
-                    ->native(false),
+                    ->native(false)
+                    ->columnSpan(1),
                 DatePicker::make('endDate')
                     ->label(__('End Date'))
                     ->default(now()->toDateString())
-                    ->native(false),
+                    ->native(false)
+                    ->columnSpan(1),
                 Actions::make([
                     Action::make('resetFilters')
                         ->label(__('Reset'))
@@ -168,9 +171,11 @@ class StockPriceHistoryChartWidget extends ChartWidget
                         ->color('gray')
                         ->link()
                         ->action(fn () => $this->resetFilters()),
-                ])->columnSpanFull(),
+                ])
+                    ->alignEnd()
+                    ->columnSpanFull(),
             ])
-            ->columns(3);
+            ->columns(2);
     }
 
     /**

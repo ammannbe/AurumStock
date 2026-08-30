@@ -150,13 +150,16 @@ class ProductPriceHistoryChartWidget extends ChartWidget
                         'custom' => __('Custom'),
                     ]))
                     ->selectablePlaceholder(false)
-                    ->native(false),
+                    ->native(false)
+                    ->columnSpanFull(),
                 DatePicker::make('startDate')
                     ->label(__('Start Date'))
-                    ->native(false),
+                    ->native(false)
+                    ->columnSpan(1),
                 DatePicker::make('endDate')
                     ->label(__('End Date'))
-                    ->native(false),
+                    ->native(false)
+                    ->columnSpan(1),
                 Actions::make([
                     Action::make('resetFilters')
                         ->label(__('Reset'))
@@ -164,9 +167,11 @@ class ProductPriceHistoryChartWidget extends ChartWidget
                         ->color('gray')
                         ->link()
                         ->action(fn () => $this->resetFilters()),
-                ])->columnSpanFull(),
+                ])
+                    ->alignEnd()
+                    ->columnSpanFull(),
             ])
-            ->columns(3);
+            ->columns(2);
     }
 
     /**

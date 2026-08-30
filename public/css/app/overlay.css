@@ -11,3 +11,21 @@
     justify-content: center;
     align-items: center;
 }
+
+/* The chart filter dropdown is hardcoded to width xs upstream, which crams the fields. */
+.fi-wi-chart-filter .fi-dropdown-panel {
+    max-width: none !important;
+    width: max-content;
+    min-width: 30rem;
+}
+
+@media (max-width: 40rem) {
+    .fi-wi-chart-filter .fi-dropdown-panel {
+        min-width: 0;
+        width: calc(100vw - 2rem);
+    }
+}
+
+.fi-wi-chart-filter-content {
+    padding: 1rem;
+}
