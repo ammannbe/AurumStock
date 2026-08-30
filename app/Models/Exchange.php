@@ -13,4 +13,9 @@ class Exchange extends Model
     use HasFactory;
 
     protected $fillable = ['currency', 'value', 'fetched_at'];
+
+    protected $casts = [
+        'value' => 'decimal:6',
+        'fetched_at' => 'datetime',
+    ];
 }

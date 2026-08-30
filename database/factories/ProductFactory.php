@@ -29,6 +29,8 @@ class ProductFactory extends Factory
             'amount' => 1,
             'price' => null,
             'price_currency' => null,
+            'purchase_date' => $this->faker->dateTimeBetween('-5 years')->format('Y-m-d'),
+            'tax_year' => $this->faker->numberBetween(2018, 2026),
         ];
     }
 }

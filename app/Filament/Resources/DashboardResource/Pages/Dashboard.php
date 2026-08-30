@@ -50,7 +50,7 @@ class Dashboard extends Page
         $this->exchanges = Exchange::query()->limit(10)->get()->map(function ($e) use ($format) {
             return [
                 'currency' => $e->currency,
-                'value' => number_format($e->value, 4),
+                'value' => number_format((float) $e->value, 4),
                 'fetched_at' => $format($e->fetched_at ?? $e->updated_at),
             ];
         })->toArray();

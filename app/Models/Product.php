@@ -60,7 +60,7 @@ class Product extends Model
         'packaging',
         'mintage',
         'purchase_date',
-        'taxed_date',
+        'tax_year',
     ];
 
     protected $casts = [
@@ -68,7 +68,7 @@ class Product extends Model
         'assets' => 'array',
         'certificate' => 'boolean',
         'purchase_date' => 'date',
-        'taxed_date' => 'date',
+        'tax_year' => 'integer',
         'price' => 'decimal:2',
         'material' => Material::class,
         'weight' => 'decimal:4',

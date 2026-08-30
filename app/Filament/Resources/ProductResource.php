@@ -15,11 +15,13 @@ use App\Filament\Resources\ProductResource\Pages\CreateProduct;
 use App\Filament\Resources\ProductResource\Pages\EditProduct;
 use App\Filament\Resources\ProductResource\Pages\ListProducts;
 use App\Models\Depository;
-use App\Models\Exchange;
 use App\Models\Product;
 use App\Models\User;
+use App\Support\CurrencyConverter;
+use App\Support\ProductSpreadsheetExporter;
 use BackedEnum;
 use Filament\Actions\Action;
+use Filament\Actions\BulkAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -31,6 +33,7 @@ use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Resources\Pages\ListRecords;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -38,19 +41,20 @@ use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\Summarizers\Sum;
 use Filament\Tables\Columns\Summarizers\Summarizer;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Query\Builder;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class ProductResource extends Resource
 {
     protected static ?string $model = Product::class;
-
-    /** @var array<string, float> */
-    protected static array $exchangeRateCache = [];
 
     protected static BackedEnum|string|null $navigationIcon = 'heroicon-o-cube';
 
@@ -70,35 +74,35 @@ class ProductResource extends Resource
 
     protected static function preferredCurrencyCode(): string
     {
-        $preferredCurrency = Auth::user()?->preferred_currency;
-
-        if ($preferredCurrency instanceof Currency) {
-            return $preferredCurrency->value;
-        }
-
-        return Currency::USD->value;
+        return CurrencyConverter::preferredCode();
     }
 
     protected static function preferredCurrencyRate(): float
     {
-        $currency = static::preferredCurrencyCode();
-
-        if ($currency === Currency::USD->value) {
-            return 1.0;
-        }
-
-        if (array_key_exists($currency, static::$exchangeRateCache)) {
-            return static::$exchangeRateCache[$currency];
-        }
-
-        $rate = (float) (Exchange::query()->where('currency', $currency)->value('value') ?? 0);
-
-        return static::$exchangeRateCache[$currency] = $rate > 0 ? $rate : 1.0;
+        return CurrencyConverter::rate();
     }
 
     protected static function convertUsdToPreferred(float|int|null $amount): float
     {
-        return (float) ($amount ?? 0) * static::preferredCurrencyRate();
+        return CurrencyConverter::fromUsd($amount);
+    }
+
+    protected static function exportFilteredRecords(ListRecords $livewire, string $format): BinaryFileResponse
+    {
+        return static::exportRecords($livewire->getFilteredSortedTableQuery()->get(), $format);
+    }
+
+    /**
+     * @param  EloquentCollection<int, covariant \Illuminate\Database\Eloquent\Model>  $records
+     */
+    protected static function exportRecords(EloquentCollection $records, string $format): BinaryFileResponse
+    {
+        $records->load('depository');
+
+        /** @var Collection<int, Product> $products */
+        $products = collect($records->all());
+
+        return ProductSpreadsheetExporter::download($products, $format);
     }
 
     /**
@@ -367,8 +371,11 @@ class ProductResource extends Resource
                     ->label(__('Purchase Date'))
                     ->nullable()
                     ->columnSpan(4),
-                DatePicker::make('taxed_date')
-                    ->label(__('Taxed Date'))
+                TextInput::make('tax_year')
+                    ->label(__('Tax Year'))
+                    ->numeric()
+                    ->minValue(1900)
+                    ->maxValue(2100)
                     ->nullable()
                     ->columnSpan(4),
             ])->columns(8)->columnSpanFull(),
@@ -957,8 +964,8 @@ class ProductResource extends Resource
                 ->getStateUsing(fn ($record) => $record->packaging ? Packaging::from($record->packaging)->label() : '-')
                 ->toggleable(isToggledHiddenByDefault: true),
             TextColumn::make('mintage')->label(__('Mintage'))->numeric()->toggleable(isToggledHiddenByDefault: true),
-            TextColumn::make('purchase_date')->label(__('Purchase Date'))->isoDate()->toggleable(isToggledHiddenByDefault: true),
-            TextColumn::make('taxed_date')->label(__('Taxed Date'))->isoDate()->toggleable(isToggledHiddenByDefault: true),
+            TextColumn::make('purchase_date')->label(__('Purchase Date'))->isoDate()->sortable()->toggleable(isToggledHiddenByDefault: true),
+            TextColumn::make('tax_year')->label(__('Tax Year'))->sortable()->toggleable(isToggledHiddenByDefault: true),
 
             IconColumn::make('notes')
                 ->label(__('Notes'))
@@ -975,12 +982,53 @@ class ProductResource extends Resource
             DeleteAction::make(),
         ])->toolbarActions([
             DeleteBulkAction::make(),
+            BulkAction::make('export_csv')
+                ->label(__('Export CSV'))
+                ->icon('heroicon-o-arrow-down-tray')
+                ->action(fn (EloquentCollection $records) => static::exportRecords($records, 'csv')),
+            BulkAction::make('export_ods')
+                ->label(__('Export ODS'))
+                ->icon('heroicon-o-arrow-down-tray')
+                ->action(fn (EloquentCollection $records) => static::exportRecords($records, 'ods')),
+        ])->headerActions([
+            Action::make('export_all_csv')
+                ->label(__('Export CSV'))
+                ->icon('heroicon-o-arrow-down-tray')
+                ->action(fn (ListRecords $livewire) => static::exportFilteredRecords($livewire, 'csv')),
+            Action::make('export_all_ods')
+                ->label(__('Export ODS'))
+                ->icon('heroicon-o-arrow-down-tray')
+                ->action(fn (ListRecords $livewire) => static::exportFilteredRecords($livewire, 'ods')),
         ])->filters([
             SelectFilter::make('material')->options(collect(Material::cases())->mapWithKeys(fn ($c) => [$c->value => $c->label()])->toArray()),
             SelectFilter::make('type')->options(collect(ProductType::cases())->mapWithKeys(fn ($c) => [$c->value => $c->label()])->toArray()),
             SelectFilter::make('depository_id')->label(__('Depository'))->options(fn (): array => static::depositoryOptionsForCurrentUser()),
             SelectFilter::make('year')->options(fn () => Product::query()->distinct()->pluck('year', 'year')->filter()->toArray()),
             SelectFilter::make('price_currency')->label(__('Purchase Currency'))->options(fn () => Product::query()->distinct()->pluck('price_currency', 'price_currency')->filter()->toArray()),
+            SelectFilter::make('tax_year')
+                ->label(__('Tax Year'))
+                ->options(fn () => Product::query()->whereNotNull('tax_year')->distinct()->orderByDesc('tax_year')->pluck('tax_year', 'tax_year')->toArray()),
+            Filter::make('purchase_date')
+                ->schema([
+                    DatePicker::make('purchase_date_from')->label(__('Purchase Date From')),
+                    DatePicker::make('purchase_date_until')->label(__('Purchase Date Until')),
+                ])
+                ->query(fn (EloquentBuilder $query, array $data): EloquentBuilder => $query
+                    ->when($data['purchase_date_from'] ?? null, fn (EloquentBuilder $q, $date) => $q->whereDate('purchase_date', '>=', $date))
+                    ->when($data['purchase_date_until'] ?? null, fn (EloquentBuilder $q, $date) => $q->whereDate('purchase_date', '<=', $date)))
+                ->indicateUsing(function (array $data): array {
+                    $indicators = [];
+
+                    if ($data['purchase_date_from'] ?? null) {
+                        $indicators[] = __('Purchase Date From').': '.$data['purchase_date_from'];
+                    }
+
+                    if ($data['purchase_date_until'] ?? null) {
+                        $indicators[] = __('Purchase Date Until').': '.$data['purchase_date_until'];
+                    }
+
+                    return $indicators;
+                }),
         ])->defaultSort('name')->summaries(pageCondition: false);
     }
 
