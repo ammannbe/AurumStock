@@ -10,12 +10,19 @@ use Illuminate\Support\Facades\Http;
 
 class FetchStockPrices extends Command
 {
-    protected $signature = 'app:fetch-stock-prices {--provider=}';
+    protected $signature = 'app:fetch-stock-prices {--provider=} {--from=} {--to=}';
 
-    protected $description = 'Fetch stock prices for materials (placeholder)';
+    protected $description = 'Fetch stock prices for materials from MetalpriceAPI, optionally for a historical date range.';
 
     public function handle(): int
     {
+        $from = $this->option('from');
+        $to = $this->option('to');
+
+        if ($from || $to) {
+            return $this->fetchHistoricalRange($from, $to);
+        }
+
         $this->info('Fetching metal prices using configured provider (MetalpriceAPI expected).');
 
         $baseUrl = config('services.metalpriceapi.base_url');
@@ -40,10 +47,7 @@ class FetchStockPrices extends Command
 
         $data = $response->json();
         foreach ($mapping as $mat => $symbol) {
-            $rateKey = 'USDX'.$symbol;
-            $price = isset($data['rates'][$rateKey])
-                ? $data['rates'][$rateKey]
-                : null;
+            $price = $this->extractPrice($data['rates'] ?? [], $symbol);
 
             if ($price === null) {
                 $this->warn("No price for {$symbol}; skipping.");
@@ -68,5 +72,115 @@ class FetchStockPrices extends Command
         }
 
         return Command::SUCCESS;
+    }
+
+    protected function fetchHistoricalRange(?string $from, ?string $to): int
+    {
+        if ($from === null || $to === null) {
+            $this->error('Use both --from and --to for historical imports.');
+
+            return Command::FAILURE;
+        }
+
+        $baseUrl = $this->resolveHistoricalBaseUrl();
+        $apiKey = config('services.metalpriceapi.key');
+
+        if ($apiKey === null || $apiKey === '') {
+            $this->error('METALPRICE_API_KEY is required for historical imports.');
+
+            return Command::FAILURE;
+        }
+
+        $response = Http::withHeaders([
+            'Authorization' => "Bearer {$apiKey}",
+        ])->get($baseUrl, [
+            'base' => 'USD',
+            'start_date' => $from,
+            'end_date' => $to,
+            'api_key' => $apiKey,
+        ]);
+
+        $data = $response->json();
+
+        if (($data['success'] ?? true) === false) {
+            $message = $data['error']['message'] ?? 'Historical date range is not available with the current plan.';
+            $this->error($message);
+
+            return Command::FAILURE;
+        }
+
+        if (! $response->successful()) {
+            $this->error('Failed to fetch historical metal prices: '.$response->status());
+
+            return Command::FAILURE;
+        }
+
+        $ratesByDate = $data['rates'] ?? [];
+        $symbolMap = Material::symbolMap(true);
+
+        $count = 0;
+
+        foreach ($ratesByDate as $date => $dayRates) {
+            foreach ($symbolMap as $materialValue => $symbol) {
+                $price = $this->extractPrice($dayRates, $symbol);
+
+                if ($price === null) {
+                    continue;
+                }
+
+                $stock = StockPrice::updateOrCreate(
+                    ['material' => $materialValue],
+                    ['price' => $price, 'fetched_at' => $date.' 00:00:00']
+                );
+
+                $fetchedAt = $stock->fetched_at ?? $date.' 00:00:00';
+
+                $updated = StockPriceHistory::updateOrCreate([
+                    'stock_price_id' => $stock->id,
+                    'fetched_at' => $fetchedAt,
+                ], [
+                    'price' => $price,
+                ]);
+
+                if ($updated->wasRecentlyCreated) {
+                    $count++;
+                }
+
+                $this->line(Material::from($materialValue)->label().' '.$date.': '.number_format((float) $price, 6).' USD/oz');
+            }
+        }
+
+        $this->info('Imported '.$count.' historical price entries.');
+
+        return Command::SUCCESS;
+    }
+
+    protected function resolveHistoricalBaseUrl(): string
+    {
+        $baseUrl = rtrim(config('services.metalpriceapi.base_url', 'https://api.metalpriceapi.com/v1/latest'), '/');
+
+        if (str_contains($baseUrl, '/timeframe')) {
+            return $baseUrl;
+        }
+
+        if (str_contains($baseUrl, '/latest')) {
+            return preg_replace('#/latest$#', '/timeframe', $baseUrl) ?? $baseUrl.'/timeframe';
+        }
+
+        return $baseUrl.'/timeframe';
+    }
+
+    /**
+     * @param  array<string, mixed>  $rates
+     */
+    protected function extractPrice(array $rates, string $symbol): ?float
+    {
+        foreach (['USDX'.$symbol, 'X'.$symbol, $symbol, 'USDX'.strtolower($symbol), 'X'.strtolower($symbol)] as $key) {
+            if (array_key_exists($key, $rates) && is_numeric($rates[$key])) {
+                return (float) $rates[$key];
+            }
+        }
+
+        return null;
     }
 }

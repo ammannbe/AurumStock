@@ -20,7 +20,6 @@ class BackfillStockPriceHistories extends Command
 
             $exists = $stock->histories()
                 ->where('price', $stock->price)
-                ->whereNotNull('fetched_at')
                 ->where('fetched_at', $fetchedAt->toDateTimeString())
                 ->exists();
 

@@ -10,6 +10,7 @@ use App\Models\StockPrice;
 use App\Models\User;
 use App\Support\CurrencyConverter;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -80,5 +81,47 @@ class DashboardWidgetsTest extends TestCase
         $this->artisan('app:backfill-stock-price-histories')->assertSuccessful();
 
         $this->assertSame(1, $stock->fresh()->histories()->count());
+    }
+
+    public function test_historical_metalpriceapi_import_can_store_a_date_range(): void
+    {
+        Http::fake([
+            'https://api.metalpriceapi.com/v1/timeframe*' => Http::response([
+                'rates' => [
+                    '2024-01-01' => ['XAU' => 2000.5],
+                    '2024-01-02' => ['XAU' => 2010.5],
+                ],
+            ]),
+        ]);
+
+        $this->artisan('app:fetch-stock-prices --from=2024-01-01 --to=2024-01-02')->assertSuccessful();
+
+        $this->assertDatabaseHas('stock_price_histories', [
+            'stock_price_id' => 1,
+            'price' => '2000.500000',
+            'fetched_at' => '2024-01-01 00:00:00',
+        ]);
+
+        $this->assertDatabaseHas('stock_price_histories', [
+            'stock_price_id' => 1,
+            'price' => '2010.500000',
+            'fetched_at' => '2024-01-02 00:00:00',
+        ]);
+    }
+
+    public function test_historical_metalpriceapi_import_fails_cleanly_when_date_range_requires_paid_plan(): void
+    {
+        Http::fake([
+            'https://api.metalpriceapi.com/v1/timeframe*' => Http::response([
+                'success' => false,
+                'error' => [
+                    'statusCode' => 209,
+                    'message' => 'Querying older than 30 days requires a paid plan. See documentation here: https://metalpriceapi.com/documentation#api_timeframe',
+                ],
+            ], 200),
+        ]);
+
+        $this->artisan('app:fetch-stock-prices --from=2025-01-01 --to=2025-02-01')
+            ->assertFailed();
     }
 }

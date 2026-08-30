@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Enums\Material;
 use App\Models\StockPrice;
+use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
@@ -41,6 +42,11 @@ class StockPriceResource extends Resource
                 Material::Palladium->value => Material::Palladium->label(),
             ])->required(),
             TextInput::make('price')->label(__('Price'))->numeric()->required(),
+            DateTimePicker::make('fetched_at')
+                ->label(__('Price date'))
+                ->default(now())
+                ->required()
+                ->native(false),
         ]);
     }
 
