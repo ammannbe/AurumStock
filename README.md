@@ -1,6 +1,6 @@
 # AurumStock
 
-AurumStock is a precious metals inventory application for tracking products, depositories, shared access, stock prices, and exchange rates.
+AurumStock is a precious metals inventory application for tracking products, depositories, stock prices, and exchange rates.
 
 Written with the PHP framework [Laravel](https://laravel.com/) and built primarily with [Filament](https://filamentphp.com/) and [Livewire](https://livewire.laravel.com/).
 
@@ -41,7 +41,6 @@ ddev <custom command>
 
 - Product management for precious metals (material, type, fineness, weight units, purchase data, images, notes, and more)
 - Depository management
-- Product and depository sharing between users with `view` and `edit` permissions
 - Live material valuation based on stock prices
 - Exchange rates based on USD (`1 USD = exchange.value`)
 - Stock price history tracking

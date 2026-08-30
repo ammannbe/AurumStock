@@ -7,8 +7,6 @@ This is a Laravel precious metals inventory application.
 The app manages:
 - products
 - depositories
-- product sharing
-- depository sharing
 - stock prices
 - stock price history
 - exchange rates

@@ -11,7 +11,6 @@ use Filament\Actions\Action;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
-use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 
@@ -19,24 +18,9 @@ class EditProduct extends EditRecord
 {
     protected static string $resource = ProductResource::class;
 
-    public function getSubheading(): string|Htmlable|null
-    {
-        /** @var Product $record */
-        $record = $this->getRecord();
-
-        $count = $record->shares()->count();
-
-        if ($count === 0) {
-            return __('Not shared');
-        }
-
-        return __('Shared with :count users', ['count' => $count]);
-    }
-
     protected function getHeaderActions(): array
     {
         return [
-            ProductResource::makeEditSharesAction(),
             Action::make('templateSync')
                 ->label(fn (Product $record): string => $record->isSynchronizedWithTemplate()
                     ? __('In sync with template')
