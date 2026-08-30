@@ -32,6 +32,23 @@ test('authenticated users can access user panel', function () {
     expect($response->headers->get('Location'))->not->toContain('/app/login');
 });
 
+test('admin users can access admin panel', function () {
+    $user = User::factory()->create(['is_admin' => true]);
+
+    $response = $this->actingAs($user)->get('/admin');
+
+    $response->assertStatus(302);
+    expect($response->headers->get('Location'))->not->toContain('/admin/login');
+});
+
+test('non-admin users cannot access admin panel', function () {
+    $user = User::factory()->create(['is_admin' => false]);
+
+    $response = $this->actingAs($user)->get('/admin');
+
+    $response->assertForbidden();
+});
+
 test('users can logout from filament user panel', function () {
     $user = User::factory()->create();
 

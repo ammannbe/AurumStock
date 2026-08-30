@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * @property int $id
@@ -34,6 +35,8 @@ class Product extends Model
     protected $fillable = [
         'user_id',
         'depository_id',
+        'template_id',
+        'source_hash',
         'name',
         'type',
         'material',
@@ -143,6 +146,85 @@ class Product extends Model
                 return ($materialValue - $priceInUSD) / $priceInUSD * 100;
             },
         );
+    }
+
+    public static function fromTemplate(ProductTemplate $template, array $attributes = []): self
+    {
+        $data = [
+            'template_id' => $template->id,
+            'source_hash' => $template->source_hash,
+            'name' => $template->name,
+            'type' => $template->type,
+            'material' => $template->material,
+            'weight' => $template->weight,
+            'weight_unit' => $template->weight_unit,
+            'amount' => $template->amount,
+            'face_value' => $template->face_value,
+            'year' => $template->year,
+            'reference_number' => $template->reference_number,
+            'size' => $template->size,
+            'price' => $template->price,
+            'price_currency' => $template->price_currency,
+            'front_image_path' => $template->front_image_path,
+            'back_image_path' => $template->back_image_path,
+            'text_front' => $template->text_front,
+            'text_back' => $template->text_back,
+            'assets' => $template->assets,
+            'notes' => $template->notes,
+            'quality' => $template->quality,
+            'certificate' => $template->certificate,
+            'manufacturer' => $template->manufacturer,
+            'country_of_origin' => $template->country_of_origin,
+            'fineness' => $template->fineness,
+            'packaging' => $template->packaging,
+            'mintage' => $template->mintage,
+            'purchase_date' => $template->purchase_date,
+            'tax_year' => $template->tax_year,
+        ];
+
+        return static::query()->create(array_merge($data, $attributes));
+    }
+
+    public function isSynchronizedWithTemplate(): bool
+    {
+        if (! $this->template_id || ! $this->template) {
+            return false;
+        }
+
+        return $this->source_hash !== null
+            && $this->template->source_hash !== null
+            && $this->source_hash === $this->template->source_hash;
+    }
+
+    public function deleteMediaField(string $field): void
+    {
+        if (! in_array($field, ['front_image_path', 'back_image_path'], true)) {
+            return;
+        }
+
+        $value = $this->getAttribute($field);
+
+        if (! is_string($value) || $value === '') {
+            $this->forceFill([$field => null])->saveQuietly();
+
+            return;
+        }
+
+        $templateValue = $this->template?->getAttribute($field);
+
+        if ($templateValue === $value) {
+            $this->forceFill([$field => null])->saveQuietly();
+
+            return;
+        }
+
+        Storage::disk('public')->delete($value);
+        $this->forceFill([$field => null])->saveQuietly();
+    }
+
+    public function template(): BelongsTo
+    {
+        return $this->belongsTo(ProductTemplate::class);
     }
 
     public function owner(): BelongsTo

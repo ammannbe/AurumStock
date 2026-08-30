@@ -16,6 +16,7 @@ use App\Filament\Resources\ProductResource\Pages\EditProduct;
 use App\Filament\Resources\ProductResource\Pages\ListProducts;
 use App\Models\Depository;
 use App\Models\Product;
+use App\Models\ProductTemplate;
 use App\Models\User;
 use App\Support\CurrencyConverter;
 use App\Support\ProductSpreadsheetExporter;
@@ -33,6 +34,7 @@ use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Set;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
@@ -241,6 +243,49 @@ class ProductResource extends Resource
         return $schema->schema([
             Section::make(__('General'))->schema([
                 Hidden::make('user_id')->default(fn () => Auth::id()),
+                Select::make('template_id')
+                    ->label(__('Vorlage aus Datenbank'))
+                    ->options(fn () => ProductTemplate::query()->orderBy('name')->pluck('name', 'id')->all())
+                    ->searchable()
+                    ->nullable()
+                    ->live()
+                    ->afterStateUpdated(function (?int $state, Set $set): void {
+                        if (! $state) {
+                            return;
+                        }
+
+                        $template = ProductTemplate::query()->find($state);
+
+                        if (! $template) {
+                            return;
+                        }
+
+                        $set('name', $template->name);
+                        $set('year', $template->year);
+                        $set('material', $template->material);
+                        $set('type', $template->type);
+                        $set('manufacturer', $template->manufacturer);
+                        $set('country_of_origin', $template->country_of_origin);
+                        $set('size', $template->size);
+                        $set('weight', $template->weight);
+                        $set('weight_unit', $template->weight_unit);
+                        $set('fineness', $template->fineness);
+                        $set('mintage', $template->mintage);
+                        $set('face_value', $template->face_value);
+                        $set('price', $template->price);
+                        $set('price_currency', $template->price_currency);
+                        $set('front_image_path', $template->front_image_path);
+                        $set('back_image_path', $template->back_image_path);
+                        $set('text_front', $template->text_front);
+                        $set('text_back', $template->text_back);
+                        $set('notes', $template->notes);
+                        $set('quality', $template->quality);
+                        $set('certificate', $template->certificate);
+                        $set('packaging', $template->packaging);
+                        $set('reference_number', $template->reference_number);
+                        $set('amount', $template->amount ?? 1);
+                    })
+                    ->columnSpanFull(),
                 TextInput::make('name')->required()->maxLength(255)->columnSpan(3),
                 TextInput::make('year')->numeric()->nullable()->label(__('Year'))->columnSpan(1),
 
@@ -395,6 +440,26 @@ class ProductResource extends Resource
                     ->disk('public')
                     ->nullable()
                     ->columnSpan(4),
+                Repeater::make('assets')
+                    ->label(__('Additional Media'))
+                    ->schema([
+                        Select::make('type')
+                            ->label(__('Type'))
+                            ->options([
+                                'image' => __('Image'),
+                                'video' => __('Video'),
+                            ])
+                            ->required(),
+                        TextInput::make('label')->label(__('Label'))->nullable(),
+                        FileUpload::make('path')
+                            ->label(__('File'))
+                            ->directory('products/media')
+                            ->disk('public')
+                            ->required(),
+                    ])
+                    ->columns(3)
+                    ->defaultItems(0)
+                    ->columnSpanFull(),
                 TextInput::make('text_front')
                     ->label(__('Text Front'))
                     ->nullable()

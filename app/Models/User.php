@@ -18,7 +18,7 @@ use Illuminate\Notifications\Notifiable;
 /**
  * @method static \Database\Factories\UserFactory factory(...$parameters)
  */
-#[Fillable(['name', 'email', 'password', 'notes', 'two_factor_enabled', 'passkey_enabled', 'preferred_currency', 'preferred_locale'])]
+#[Fillable(['name', 'email', 'password', 'notes', 'two_factor_enabled', 'passkey_enabled', 'is_admin', 'preferred_currency', 'preferred_locale'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable implements FilamentUser, HasLocalePreference
 {
@@ -30,6 +30,7 @@ class User extends Authenticatable implements FilamentUser, HasLocalePreference
         'password' => 'hashed',
         'two_factor_enabled' => 'boolean',
         'passkey_enabled' => 'boolean',
+        'is_admin' => 'boolean',
         'preferred_currency' => Currency::class,
     ];
 
@@ -56,6 +57,10 @@ class User extends Authenticatable implements FilamentUser, HasLocalePreference
 
     public function canAccessPanel(Panel $panel): bool
     {
+        if ($panel->getId() === 'admin') {
+            return (bool) $this->is_admin;
+        }
+
         return $panel->getId() === 'user';
     }
 }
