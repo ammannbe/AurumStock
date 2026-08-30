@@ -5,11 +5,19 @@ namespace App\Filament\Resources\ProductResource\Widgets;
 use App\Models\Product;
 use App\Support\CurrencyConverter;
 use Carbon\Carbon;
+use Filament\Actions\Action;
+use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Select;
+use Filament\Schemas\Components\Actions;
+use Filament\Schemas\Schema;
 use Filament\Widgets\ChartWidget;
+use Filament\Widgets\ChartWidget\Concerns\HasFiltersSchema;
 use Illuminate\Support\Facades\DB;
 
 class ProductPriceHistoryChartWidget extends ChartWidget
 {
+    use HasFiltersSchema;
+
     public ?Product $record = null;
 
     protected ?string $maxHeight = '320px';
@@ -24,6 +32,18 @@ class ProductPriceHistoryChartWidget extends ChartWidget
      */
     private const MAX_POINTS_WITH_MARKERS = 60;
 
+    /**
+     * Preset ranges, mapped to the number of days they span. Null means all data.
+     */
+    private const PRESETS = [
+        '1m' => 30,
+        '3m' => 90,
+        '1y' => 365,
+        '5y' => 1825,
+        'purchase' => null,
+        'all' => null,
+    ];
+
     public function getHeading(): ?string
     {
         return __('Price Trend').' ('.CurrencyConverter::preferredCode().')';
@@ -32,6 +52,138 @@ class ProductPriceHistoryChartWidget extends ChartWidget
     public function getDescription(): ?string
     {
         return __('Material value of this position based on historical metal prices.');
+    }
+
+    // Runs after the trait fills the schema defaults, so our own default wins.
+    public function mountHasFiltersSchema(): void
+    {
+        $this->filters = $this->defaultFilters();
+    }
+
+    public function updatedFilters(mixed $value, ?string $key = null): void
+    {
+        $preset = $this->filters['preset'] ?? null;
+
+        if ($key === 'preset' && is_string($preset) && $preset !== 'custom') {
+            [$this->filters['startDate'], $this->filters['endDate']] = $this->rangeForPreset($preset);
+        }
+
+        // Editing a date by hand no longer matches the chosen preset.
+        if (in_array($key, ['startDate', 'endDate'], true)) {
+            $this->filters['preset'] = 'custom';
+        }
+    }
+
+    public function resetFilters(): void
+    {
+        $this->filters = $this->defaultFilters();
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function defaultFilters(): array
+    {
+        $preset = $this->record?->purchase_date ? 'purchase' : 'all';
+
+        [$start, $end] = $this->rangeForPreset($preset);
+
+        return [
+            'preset' => $preset,
+            'startDate' => $start,
+            'endDate' => $end,
+        ];
+    }
+
+    /**
+     * @return array{0: string, 1: string}
+     */
+    private function rangeForPreset(string $preset): array
+    {
+        $end = now()->toDateString();
+
+        if ($preset === 'purchase') {
+            $purchaseDate = $this->record?->purchase_date;
+
+            return [
+                $purchaseDate ? $purchaseDate->toDateString() : $this->earliestRecordedDay(),
+                $end,
+            ];
+        }
+
+        // 'all' maps to null, so check the key rather than using ?? here.
+        $days = array_key_exists($preset, self::PRESETS) ? self::PRESETS[$preset] : null;
+
+        if ($days === null) {
+            return [$this->earliestRecordedDay(), $end];
+        }
+
+        return [now()->subDays($days)->toDateString(), $end];
+    }
+
+    private function earliestRecordedDay(): string
+    {
+        $material = $this->record?->material;
+
+        $earliest = DB::table('stock_price_histories')
+            ->join('stock_prices', 'stock_prices.id', '=', 'stock_price_histories.stock_price_id')
+            ->when($material, fn ($query) => $query->where('stock_prices.material', $material->value))
+            ->selectRaw('MIN(DATE(COALESCE(stock_price_histories.fetched_at, stock_price_histories.created_at))) as earliest_day')
+            ->first()?->earliest_day;
+
+        return $earliest ? (string) $earliest : now()->subYear()->toDateString();
+    }
+
+    public function filtersSchema(Schema $schema): Schema
+    {
+        return $schema
+            ->components([
+                Select::make('preset')
+                    ->label(__('Period'))
+                    ->options(fn (): array => array_filter([
+                        'purchase' => $this->record?->purchase_date ? __('Since purchase') : null,
+                        '1m' => __('1 month'),
+                        '3m' => __('3 months'),
+                        '1y' => __('1 year'),
+                        '5y' => __('5 years'),
+                        'all' => __('All'),
+                        'custom' => __('Custom'),
+                    ]))
+                    ->selectablePlaceholder(false)
+                    ->native(false),
+                DatePicker::make('startDate')
+                    ->label(__('Start Date'))
+                    ->native(false),
+                DatePicker::make('endDate')
+                    ->label(__('End Date'))
+                    ->native(false),
+                Actions::make([
+                    Action::make('resetFilters')
+                        ->label(__('Reset'))
+                        ->icon('heroicon-m-arrow-path')
+                        ->color('gray')
+                        ->link()
+                        ->action(fn () => $this->resetFilters()),
+                ])->columnSpanFull(),
+            ])
+            ->columns(3);
+    }
+
+    /**
+     * @return array{0: Carbon, 1: Carbon}
+     */
+    private function resolveDateRange(): array
+    {
+        $defaults = $this->defaultFilters();
+
+        $start = Carbon::parse($this->filters['startDate'] ?? $defaults['startDate']);
+        $end = Carbon::parse($this->filters['endDate'] ?? $defaults['endDate']);
+
+        if ($start->greaterThan($end)) {
+            [$start, $end] = [$end, $start];
+        }
+
+        return [$start, $end];
     }
 
     /**
@@ -45,9 +197,15 @@ class ProductPriceHistoryChartWidget extends ChartWidget
             return ['datasets' => [], 'labels' => []];
         }
 
+        [$startDate, $endDate] = $this->resolveDateRange();
+
         $rows = DB::table('stock_price_histories')
             ->join('stock_prices', 'stock_prices.id', '=', 'stock_price_histories.stock_price_id')
             ->where('stock_prices.material', $product->material->value)
+            ->whereBetween(
+                DB::raw('COALESCE(stock_price_histories.fetched_at, stock_price_histories.created_at)'),
+                [$startDate->copy()->startOfDay(), $endDate->copy()->endOfDay()]
+            )
             ->selectRaw('DATE(COALESCE(stock_price_histories.fetched_at, stock_price_histories.created_at)) as day, AVG(stock_price_histories.price) as avg_price')
             ->groupBy(DB::raw('DATE(COALESCE(stock_price_histories.fetched_at, stock_price_histories.created_at))'))
             ->orderBy('day')
@@ -103,10 +261,49 @@ class ProductPriceHistoryChartWidget extends ChartWidget
             ];
         }
 
+        $purchaseIndex = $this->purchaseLabelIndex($labels, $interval);
+
+        if ($purchaseIndex !== null) {
+            // A single visible point marking the day the product was bought.
+            $datasets[] = [
+                'label' => __('Purchase Date'),
+                'data' => array_map(
+                    fn (int $index): ?float => $index === $purchaseIndex ? $values[$index] : null,
+                    array_keys($labels)
+                ),
+                'borderColor' => '#ef4444',
+                'backgroundColor' => '#ef4444',
+                'pointRadius' => array_map(
+                    fn (int $index): int => $index === $purchaseIndex ? 6 : 0,
+                    array_keys($labels)
+                ),
+                'pointHoverRadius' => 8,
+                'pointStyle' => 'rectRot',
+                'showLine' => false,
+                'fill' => false,
+            ];
+        }
+
         return [
             'datasets' => $datasets,
             'labels' => $labels,
         ];
+    }
+
+    /**
+     * @param  array<int, string>  $labels
+     */
+    private function purchaseLabelIndex(array $labels, string $interval): ?int
+    {
+        $purchaseDate = $this->record?->purchase_date;
+
+        if (! $purchaseDate) {
+            return null;
+        }
+
+        $index = array_search($this->bucketKey($purchaseDate->toDateString(), $interval), $labels, true);
+
+        return $index === false ? null : $index;
     }
 
     /**

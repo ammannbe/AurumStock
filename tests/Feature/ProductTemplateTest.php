@@ -8,11 +8,13 @@ use App\Enums\ProductType;
 use App\Enums\Quality;
 use App\Enums\WeightUnit;
 use App\Filament\UserResources\ProductTemplateResource;
+use App\Filament\UserResources\ProductTemplateResource\Pages\CreateProductTemplate;
 use App\Models\Depository;
 use App\Models\Product;
 use App\Models\ProductTemplate;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 class ProductTemplateTest extends TestCase
@@ -149,6 +151,31 @@ class ProductTemplateTest extends TestCase
         $list = $this->get('/app/product-templates');
         $list->assertStatus(200);
         $list->assertSee('Swissmint', escape: false);
+    }
+
+    public function test_the_create_form_uses_the_expected_defaults(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+        $this->actingAs($admin);
+
+        Livewire::test(CreateProductTemplate::class)
+            ->assertSchemaStateSet([
+                'weight' => 1,
+                'weight_unit' => WeightUnit::TroyOunce->value,
+            ]);
+    }
+
+    public function test_the_media_repeater_uses_a_translated_add_label(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+        $this->actingAs($admin);
+        $this->app->setLocale('de');
+
+        $response = $this->get('/app/product-templates/create');
+
+        $response->assertStatus(200);
+        $response->assertSee('Medium hinzufügen', escape: false);
+        $response->assertDontSee('Add to Zusätzliche Medien', escape: false);
     }
 
     public function test_template_edit_url_points_at_the_user_panel(): void

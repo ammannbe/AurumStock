@@ -3,6 +3,7 @@
 namespace App\Filament\UserResources;
 
 use App\Enums\FaceValueCurrency;
+use App\Enums\Fineness;
 use App\Enums\Manufacturer;
 use App\Enums\Material;
 use App\Enums\ProductType;
@@ -13,6 +14,7 @@ use App\Filament\UserResources\ProductTemplateResource\Pages\ListProductTemplate
 use App\Models\ProductTemplate;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\Repeater\TableColumn;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -111,18 +113,32 @@ class ProductTemplateResource extends Resource
                     ->required()
                     ->step(0.0001)
                     ->minValue(0)
+                    ->default(1)
                     ->columnSpan(2),
                 Select::make('weight_unit')
                     ->label(__('Weight Unit'))
                     ->options(collect(WeightUnit::cases())->mapWithKeys(fn ($c) => [$c->value => $c->label()])->toArray())
                     ->required()
+                    ->default(WeightUnit::TroyOunce->value)
                     ->columnSpan(2),
-                TextInput::make('fineness')
+                Select::make('fineness')
                     ->label(__('Fineness'))
+                    ->options(collect(Fineness::cases())->mapWithKeys(fn ($c) => [$c->value => $c->value])->toArray())
+                    ->searchable()
                     ->nullable()
                     ->columnSpan(2),
-                TextInput::make('mintage')->label(__('Mintage'))->numeric()->nullable()->columnSpan(4),
-                TextInput::make('face_value')->label(__('Face Value'))->numeric()->nullable()->columnSpan(2),
+                TextInput::make('mintage')
+                    ->label(__('Mintage'))
+                    ->numeric()
+                    ->nullable()
+                    ->placeholder(__('How many pieces were produced?'))
+                    ->columnSpan(4),
+                TextInput::make('face_value')
+                    ->label(__('Face Value'))
+                    ->numeric()
+                    ->nullable()
+                    ->placeholder(__('Nominal value printed on the item'))
+                    ->columnSpan(2),
                 Select::make('face_value_currency')
                     ->label(__('Face Value Currency'))
                     ->options(FaceValueCurrency::toArray())
@@ -158,6 +174,12 @@ class ProductTemplateResource extends Resource
                     ->columnSpan(4),
                 Repeater::make('assets')
                     ->label(__('Additional Media'))
+                    ->addActionLabel(__('Add media'))
+                    ->table([
+                        TableColumn::make(__('Type'))->width('12rem'),
+                        TableColumn::make(__('Label')),
+                        TableColumn::make(__('File')),
+                    ])
                     ->schema([
                         Select::make('type')
                             ->label(__('Type'))
@@ -165,6 +187,7 @@ class ProductTemplateResource extends Resource
                                 'image' => __('Image'),
                                 'video' => __('Video'),
                             ])
+                            ->default('image')
                             ->required(),
                         TextInput::make('label')->label(__('Label'))->nullable(),
                         FileUpload::make('path')
@@ -173,7 +196,8 @@ class ProductTemplateResource extends Resource
                             ->disk('public')
                             ->required(),
                     ])
-                    ->columns(3)
+                    ->reorderable()
+                    ->collapsible()
                     ->defaultItems(0)
                     ->columnSpanFull(),
             ])->columns(8)->columnSpanFull(),
