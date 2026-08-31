@@ -80,6 +80,23 @@ class ProductMediaGalleryTest extends TestCase
         $this->assertSame(__('Image'), $items[1]['label']);
     }
 
+    public function test_it_derives_the_type_from_the_file_path(): void
+    {
+        $product = $this->product([
+            'front_image_path' => null,
+            'back_image_path' => null,
+            'assets' => [
+                ['label' => null, 'path' => 'products/media/clip.mov'],
+                ['label' => null, 'path' => 'products/media/detail.png'],
+            ],
+        ]);
+
+        $items = ProductMediaGallery::for($product);
+
+        $this->assertSame('video', $items[0]['type']);
+        $this->assertSame('image', $items[1]['type']);
+    }
+
     public function test_it_builds_a_gallery_for_a_template(): void
     {
         $template = ProductTemplate::factory()->create([

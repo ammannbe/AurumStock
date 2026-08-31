@@ -21,7 +21,6 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
-use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
@@ -179,26 +178,16 @@ class ProductTemplateResource extends Resource
                     ->label(__('Additional Media'))
                     ->addActionLabel(__('Add media'))
                     ->table([
-                        TableColumn::make(__('Type'))->width('12rem'),
-                        TableColumn::make(__('Label')),
-                        TableColumn::make(__('File')),
+                        TableColumn::make(__('Label'))->width('30%'),
+                        TableColumn::make(__('File'))->width('70%'),
                     ])
                     ->schema([
-                        Select::make('type')
-                            ->label(__('Type'))
-                            ->options([
-                                'image' => __('Image'),
-                                'video' => __('Video'),
-                            ])
-                            ->default('image')
-                            ->live()
-                            ->required(),
                         TextInput::make('label')->label(__('Label'))->nullable(),
                         FileUpload::make('path')
                             ->label(__('File'))
                             ->directory('product-templates/media')
                             ->disk('public')
-                            ->acceptedFileTypes(fn (Get $get): array => MediaTypes::for($get('type')))
+                            ->acceptedFileTypes(MediaTypes::for(null))
                             ->required(),
                     ])
                     ->reorderable()

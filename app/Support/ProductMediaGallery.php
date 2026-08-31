@@ -40,7 +40,7 @@ class ProductMediaGallery
                 continue;
             }
 
-            $type = ($asset['type'] ?? null) === 'video' ? 'video' : 'image';
+            $type = MediaTypes::typeForPath($asset['path']);
             $label = $asset['label'] ?? null;
 
             $items[] = [

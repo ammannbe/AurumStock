@@ -37,4 +37,13 @@ class MediaTypesTest extends TestCase
             $this->assertMatchesRegularExpression('#^(image|video)/[a-z0-9.+-]+$#', $type);
         }
     }
+
+    public function test_it_detects_the_type_from_the_file_path(): void
+    {
+        $this->assertSame('video', MediaTypes::typeForPath('products/media/clip.MP4'));
+        $this->assertSame('video', MediaTypes::typeForPath('products/media/clip.mov'));
+        $this->assertSame('image', MediaTypes::typeForPath('products/media/detail.jpg'));
+        $this->assertSame('image', MediaTypes::typeForPath('products/media/no-extension'));
+        $this->assertSame('image', MediaTypes::typeForPath(null));
+    }
 }

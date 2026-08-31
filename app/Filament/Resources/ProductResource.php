@@ -39,7 +39,6 @@ use Filament\Forms\Components\TextInput;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
-use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\IconColumn;
@@ -379,26 +378,16 @@ class ProductResource extends Resource
                     ->label(__('Additional Media'))
                     ->addActionLabel(__('Add media'))
                     ->table([
-                        TableColumn::make(__('Type'))->width('12rem'),
-                        TableColumn::make(__('Label')),
-                        TableColumn::make(__('File')),
+                        TableColumn::make(__('Label'))->width('60%'),
+                        TableColumn::make(__('File'))->width('40%'),
                     ])
                     ->schema([
-                        Select::make('type')
-                            ->label(__('Type'))
-                            ->options([
-                                'image' => __('Image'),
-                                'video' => __('Video'),
-                            ])
-                            ->default('image')
-                            ->live()
-                            ->required(),
                         TextInput::make('label')->label(__('Label'))->nullable(),
                         FileUpload::make('path')
                             ->label(__('File'))
                             ->directory('products/media')
                             ->disk('public')
-                            ->acceptedFileTypes(fn (Get $get): array => MediaTypes::for($get('type')))
+                            ->acceptedFileTypes(MediaTypes::for(null))
                             ->required(),
                     ])
                     ->reorderable()
