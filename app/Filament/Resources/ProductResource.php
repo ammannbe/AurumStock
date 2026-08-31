@@ -32,7 +32,6 @@ use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Repeater;
-use Filament\Forms\Components\Repeater\TableColumn;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -377,10 +376,7 @@ class ProductResource extends Resource
                 Repeater::make('assets')
                     ->label(__('Additional Media'))
                     ->addActionLabel(__('Add media'))
-                    ->table([
-                        TableColumn::make(__('Label'))->width('60%'),
-                        TableColumn::make(__('File'))->width('40%'),
-                    ])
+                    ->grid(['default' => 1, 'md' => 2, 'xl' => 3])
                     ->schema([
                         TextInput::make('label')->label(__('Label'))->nullable(),
                         FileUpload::make('path')
@@ -388,6 +384,8 @@ class ProductResource extends Resource
                             ->directory('products/media')
                             ->disk('public')
                             ->acceptedFileTypes(MediaTypes::for(null))
+                            ->panelLayout('integrated')
+                            ->panelAspectRatio('3:2')
                             ->required(),
                     ])
                     ->reorderable()

@@ -92,3 +92,9 @@
 .fi-wi-chart-filter-content {
     padding: 1rem;
 }
+
+/* FilePond sizes video previews from their intrinsic height, which leaves the fixed-ratio panel mostly empty. */
+.filepond--media-preview video {
+    height: 100% !important;
+    object-fit: cover;
+}

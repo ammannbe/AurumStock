@@ -15,7 +15,6 @@ use App\Models\ProductTemplate;
 use App\Support\MediaTypes;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Repeater;
-use Filament\Forms\Components\Repeater\TableColumn;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -177,10 +176,7 @@ class ProductTemplateResource extends Resource
                 Repeater::make('assets')
                     ->label(__('Additional Media'))
                     ->addActionLabel(__('Add media'))
-                    ->table([
-                        TableColumn::make(__('Label'))->width('30%'),
-                        TableColumn::make(__('File'))->width('70%'),
-                    ])
+                    ->grid(['default' => 1, 'md' => 2, 'xl' => 3])
                     ->schema([
                         TextInput::make('label')->label(__('Label'))->nullable(),
                         FileUpload::make('path')
@@ -188,6 +184,8 @@ class ProductTemplateResource extends Resource
                             ->directory('product-templates/media')
                             ->disk('public')
                             ->acceptedFileTypes(MediaTypes::for(null))
+                            ->panelLayout('integrated')
+                            ->panelAspectRatio('3:2')
                             ->required(),
                     ])
                     ->reorderable()
