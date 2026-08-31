@@ -9,8 +9,13 @@ class Kernel extends ConsoleKernel
 {
     protected function schedule(Schedule $schedule)
     {
-        $schedule->command('app:fetch-exchange-rates')->daily();
-        $schedule->command('app:fetch-stock-prices')->daily();
+        $schedule->command('app:fetch-exchange-rates')->daily()->withoutOverlapping();
+
+        $stockPrices = $schedule->command('app:fetch-stock-prices')->withoutOverlapping();
+
+        config('services.metalpriceapi.interval') === 'hourly'
+            ? $stockPrices->hourly()
+            : $stockPrices->daily();
     }
 
     protected function commands()

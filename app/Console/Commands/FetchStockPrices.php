@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Http;
 
 class FetchStockPrices extends Command
 {
-    protected $signature = 'app:fetch-stock-prices {--provider=} {--from=} {--to=}';
+    protected $signature = 'app:fetch-stock-prices {--provider=} {--from=} {--to=} {--interval=}';
 
     protected $description = 'Fetch stock prices for materials from MetalpriceAPI, optionally for a historical date range.';
 
@@ -32,21 +32,32 @@ class FetchStockPrices extends Command
         $mapping = Material::symbolMap(true);
         $symbols = implode(',', array_map(fn ($m) => 'X'.$m, $mapping));
 
-        $response = Http::withHeaders(array_filter([
-            'Authorization' => $apiKey ? "Bearer {$apiKey}" : null,
-        ]))->get($baseUrl, [
-            'base' => 'USD',
-            'symbols' => $symbols,
-            'api_key' => $apiKey,
-        ]);
+        $response = Http::timeout(15)
+            ->retry(2, 200)
+            ->withHeaders(array_filter([
+                'Authorization' => $apiKey ? "Bearer {$apiKey}" : null,
+            ]))->get($baseUrl, [
+                'base' => 'USD',
+                'symbols' => $symbols,
+                'api_key' => $apiKey,
+            ]);
 
         if (! $response->successful()) {
-            $this->error('Failed to fetch metal prices: '.$response->status());
+            $this->error('Failed to fetch metal prices: '.$response->status().' '.$response->body());
 
             return Command::FAILURE;
         }
 
         $data = $response->json();
+
+        if (($data['success'] ?? true) === false) {
+            $this->error('Failed to fetch metal prices: '.json_encode($data['error'] ?? $data));
+
+            return Command::FAILURE;
+        }
+
+        $bucket = $this->historyBucket();
+
         foreach ($mapping as $mat => $symbol) {
             $price = $this->extractPrice($data['rates'] ?? [], $symbol);
 
@@ -61,18 +72,25 @@ class FetchStockPrices extends Command
                 ['price' => $price, 'fetched_at' => now()]
             );
 
-            $historyTimestamp = $stock->fetched_at ?? now();
-
-            StockPriceHistory::updateOrCreate([
-                'stock_price_id' => $stock->id,
-                'price' => $price,
-                'fetched_at' => $historyTimestamp,
-            ]);
+            StockPriceHistory::updateOrCreate(
+                ['stock_price_id' => $stock->id, 'fetched_at' => $bucket],
+                ['price' => $price],
+            );
 
             $this->info("Updated {$symbol}: ".number_format($price, 6).' USD/oz');
         }
 
         return Command::SUCCESS;
+    }
+
+    /**
+     * Snapshots collapse into one history row per material per interval.
+     */
+    protected function historyBucket(): Carbon
+    {
+        $interval = $this->option('interval') ?? config('services.metalpriceapi.interval', 'daily');
+
+        return $interval === 'hourly' ? now()->startOfHour() : now()->startOfDay();
     }
 
     protected function fetchHistoricalRange(?string $from, ?string $to): int

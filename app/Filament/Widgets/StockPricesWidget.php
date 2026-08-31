@@ -33,23 +33,18 @@ class StockPricesWidget extends StatsOverviewWidget
 
                 $price = CurrencyConverter::fromUsd($stock !== null ? (float) $stock->price : null);
 
-                $history = $stock
-                    ? $stock->histories()
-                        ->latest('id')
-                        ->limit(30)
-                        ->pluck('price')
-                        ->reverse()
-                        ->map(fn ($value): float => CurrencyConverter::fromUsd((float) $value))
-                        ->values()
-                        ->all()
-                    : [];
+                $hourly = $stock !== null && $this->hasHourlySnapshots($stock);
+                $history = $stock !== null ? $this->sparkline($stock, $hourly) : [];
 
                 if ($history === []) {
                     $history = [$price];
                 }
 
                 return Stat::make($material->label(), Number::currency($price, $currency, app()->getLocale(), 4))
-                    ->description(__(':currency / oz', ['currency' => $currency]))
+                    ->description(__(':currency / oz · :window', [
+                        'currency' => $currency,
+                        'window' => $hourly ? __('24h') : __('30d'),
+                    ]))
                     ->descriptionIcon($material->icon())
                     ->color(match ($material) {
                         Material::Gold => 'warning',
@@ -59,6 +54,40 @@ class StockPricesWidget extends StatsOverviewWidget
                     })
                     ->chart($history);
             })
+            ->all();
+    }
+
+    /**
+     * More than one snapshot within a day means the fetcher runs hourly.
+     */
+    private function hasHourlySnapshots(StockPrice $stock): bool
+    {
+        return $stock->histories()
+            ->where('fetched_at', '>=', now()->subDay())
+            ->count() > 1;
+    }
+
+    /**
+     * @return array<int, float>
+     */
+    private function sparkline(StockPrice $stock, bool $hourly): array
+    {
+        if ($hourly) {
+            return $stock->histories()
+                ->where('fetched_at', '>=', now()->subDay())
+                ->orderBy('fetched_at')
+                ->pluck('price')
+                ->map(fn ($value): float => CurrencyConverter::fromUsd((float) $value))
+                ->all();
+        }
+
+        return $stock->histories()
+            ->where('fetched_at', '>=', now()->subDays(30))
+            ->selectRaw('DATE(fetched_at) as day, AVG(price) as average')
+            ->groupBy('day')
+            ->orderBy('day')
+            ->pluck('average')
+            ->map(fn ($value): float => CurrencyConverter::fromUsd((float) $value))
             ->all();
     }
 }

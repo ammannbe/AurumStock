@@ -19,7 +19,6 @@ class BackfillStockPriceHistories extends Command
             $fetchedAt = $stock->fetched_at ?? $stock->created_at ?? now();
 
             $exists = $stock->histories()
-                ->where('price', $stock->price)
                 ->where('fetched_at', $fetchedAt->toDateTimeString())
                 ->exists();
 

@@ -184,6 +184,11 @@ class StockPriceHistoryChartWidget extends ChartWidget
     private const MAX_DAILY_POINTS = 400;
 
     /**
+     * Up to this many days the chart shows each hourly snapshot separately.
+     */
+    private const MAX_HOURLY_DAYS = 2;
+
+    /**
      * Above this many points the markers are hidden so the line stays readable.
      */
     private const MAX_POINTS_WITH_MARKERS = 60;
@@ -195,16 +200,32 @@ class StockPriceHistoryChartWidget extends ChartWidget
     {
         [$startDate, $endDate] = $this->resolveDateRange();
 
-        $rows = DB::table('stock_price_histories')
+        $from = $startDate->copy()->startOfDay();
+        $to = $endDate->copy()->endOfDay();
+
+        $hourly = $from->diffInDays($to) <= self::MAX_HOURLY_DAYS;
+
+        $timestamp = 'COALESCE(stock_price_histories.fetched_at, stock_price_histories.created_at)';
+
+        $query = DB::table('stock_price_histories')
             ->join('stock_prices', 'stock_prices.id', '=', 'stock_price_histories.stock_price_id')
-            ->selectRaw('stock_prices.material as material, DATE(COALESCE(stock_price_histories.fetched_at, stock_price_histories.created_at)) as day, AVG(stock_price_histories.price) as avg_price')
-            ->whereBetween(DB::raw('COALESCE(stock_price_histories.fetched_at, stock_price_histories.created_at)'), [$startDate->copy()->startOfDay(), $endDate->copy()->endOfDay()])
-            ->groupBy('stock_prices.material', DB::raw('DATE(COALESCE(stock_price_histories.fetched_at, stock_price_histories.created_at))'))
-            ->orderBy('day')
+            ->whereBetween(DB::raw($timestamp), [$from, $to]);
+
+        // Short ranges keep every snapshot so hourly fetches stay visible.
+        $rows = ($hourly
+            ? $query
+                ->selectRaw("stock_prices.material as material, {$timestamp} as moment, stock_price_histories.price as avg_price")
+                ->orderBy('moment')
+            : $query
+                ->selectRaw("stock_prices.material as material, DATE({$timestamp}) as moment, AVG(stock_price_histories.price) as avg_price")
+                ->groupBy('stock_prices.material', DB::raw("DATE({$timestamp})"))
+                ->orderBy('moment')
+        )
             ->get()
             ->map(fn ($row): array => [
                 'material' => (int) $row->material,
-                'day' => (string) $row->day,
+                'moment' => (string) $row->moment,
+                'day' => Carbon::parse((string) $row->moment)->format('Y-m-d'),
                 'avg_price_usd' => (float) $row->avg_price,
             ])
             ->values();
@@ -216,19 +237,20 @@ class StockPriceHistoryChartWidget extends ChartWidget
 
         $rows = $rows->map(fn (array $row): array => [
             'material' => $row['material'],
-            'day' => $row['day'],
+            'moment' => $row['moment'],
             'avg_price' => $row['avg_price_usd'] * ($ratesByDay[$row['day']] ?? 1.0),
         ]);
 
-        $dayCount = $rows->pluck('day')->unique()->count();
-        $interval = $this->resolveInterval($dayCount);
+        $interval = $hourly
+            ? 'hour'
+            : $this->resolveInterval($rows->pluck('moment')->unique()->count());
 
         // Bucketing happens in PHP so the query stays portable across drivers.
         $buckets = $rows
-            ->groupBy(fn (array $row): string => $row['material'].'|'.$this->bucketKey($row['day'], $interval))
+            ->groupBy(fn (array $row): string => $row['material'].'|'.$this->bucketKey($row['moment'], $interval))
             ->map(fn ($group): array => [
                 'material' => $group->first()['material'],
-                'bucket' => $this->bucketKey($group->first()['day'], $interval),
+                'bucket' => $this->bucketKey($group->first()['moment'], $interval),
                 'avg_price' => $group->avg('avg_price'),
             ])
             ->values();
@@ -283,13 +305,15 @@ class StockPriceHistoryChartWidget extends ChartWidget
         return $dayCount <= self::MAX_DAILY_POINTS ? 'day' : 'week';
     }
 
-    private function bucketKey(string $day, string $interval): string
+    private function bucketKey(string $moment, string $interval): string
     {
-        $date = Carbon::parse($day);
+        $date = Carbon::parse($moment);
 
-        return $interval === 'week'
-            ? $date->startOfWeek()->format('Y-m-d')
-            : $date->format('Y-m-d');
+        return match ($interval) {
+            'hour' => $date->startOfHour()->format('Y-m-d H:i'),
+            'week' => $date->startOfWeek()->format('Y-m-d'),
+            default => $date->format('Y-m-d'),
+        };
     }
 
     protected function getType(): string

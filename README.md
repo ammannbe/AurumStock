@@ -91,8 +91,13 @@ The project can fetch external market data using these environment variables:
 - `EXCHANGE_RATE_API_KEY`
 - `METALPRICE_BASE_URL` (optional override)
 - `EXCHANGE_RATE_BASE_URL` (optional override)
+- `METALPRICE_FETCH_INTERVAL` (`daily` or `hourly`, defaults to `daily`)
 
 Set them in `.env` if you want live rates and prices.
+
+`METALPRICE_FETCH_INTERVAL=hourly` records one price snapshot per material per hour instead of
+per day. It needs roughly 720 MetalpriceAPI requests per month, which exceeds the free plan's
+100 requests per month, so keep it on `daily` unless a paid plan is active.
 
 ### Fetching market data
 

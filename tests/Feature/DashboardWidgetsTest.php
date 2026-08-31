@@ -130,6 +130,71 @@ class DashboardWidgetsTest extends TestCase
         $this->assertSame(2, $data['datasets'][0]['pointRadius']);
     }
 
+    public function test_stock_price_history_chart_shows_hourly_points_for_a_single_day(): void
+    {
+        $stockPrice = StockPrice::create(['material' => 1, 'price' => 100, 'fetched_at' => now()]);
+
+        $start = now()->startOfDay();
+
+        foreach (range(0, 5) as $hour) {
+            StockPriceHistory::create([
+                'stock_price_id' => $stockPrice->id,
+                'price' => 100 + $hour,
+                'fetched_at' => $start->copy()->addHours($hour),
+            ]);
+        }
+
+        $this->actingAs(User::factory()->create());
+
+        $widget = new StockPriceHistoryChartWidget;
+        $widget->filters = [
+            'startDate' => $start->toDateString(),
+            'endDate' => $start->toDateString(),
+        ];
+
+        $data = (new \ReflectionMethod($widget, 'getData'))->invoke($widget);
+
+        $this->assertCount(6, $data['labels']);
+
+        foreach ($data['labels'] as $label) {
+            $this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/', $label);
+        }
+    }
+
+    public function test_stock_price_sparkline_uses_daily_averages_without_hourly_data(): void
+    {
+        $stockPrice = StockPrice::create(['material' => 1, 'price' => 100, 'fetched_at' => now()]);
+
+        foreach (range(0, 4) as $offset) {
+            StockPriceHistory::create([
+                'stock_price_id' => $stockPrice->id,
+                'price' => 100 + $offset,
+                'fetched_at' => now()->subDays($offset)->startOfDay(),
+            ]);
+        }
+
+        $this->actingAs(User::factory()->create());
+
+        Livewire::test(StockPricesWidget::class)->assertSee(__('30d'));
+    }
+
+    public function test_stock_price_sparkline_switches_to_24h_with_hourly_data(): void
+    {
+        $stockPrice = StockPrice::create(['material' => 1, 'price' => 100, 'fetched_at' => now()]);
+
+        foreach (range(0, 5) as $hour) {
+            StockPriceHistory::create([
+                'stock_price_id' => $stockPrice->id,
+                'price' => 100 + $hour,
+                'fetched_at' => now()->subHours($hour)->startOfHour(),
+            ]);
+        }
+
+        $this->actingAs(User::factory()->create());
+
+        Livewire::test(StockPricesWidget::class)->assertSee(__('24h'));
+    }
+
     public function test_exchange_rates_are_ordered_preferred_then_usd_then_alphabetically(): void
     {
         foreach (['AUD' => 1.5, 'CHF' => 0.8, 'EUR' => 0.9, 'USD' => 1.0] as $currency => $value) {

@@ -43,6 +43,8 @@ return [
     'metalpriceapi' => [
         'base_url' => env('METALPRICE_BASE_URL', 'https://api.metalpriceapi.com/v1/latest'),
         'key' => env('METALPRICE_API_KEY'),
+        // Hourly needs a paid plan: ~720 requests/month exceeds the free tier's 100.
+        'interval' => env('METALPRICE_FETCH_INTERVAL', 'daily'),
     ],
 
 ];
