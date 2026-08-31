@@ -115,6 +115,9 @@ class ProductTemplateTest extends TestCase
         $this->assertSame('Springbok', $fresh->text_back);
         $this->assertNotNull($fresh->source_hash);
 
+        $this->assertSame($template->id, $product->fresh()->template_id);
+        $this->assertSame($fresh->source_hash, $product->fresh()->source_hash);
+
         foreach (['amount', 'certificate', 'packaging', 'price', 'price_currency', 'reference_number', 'purchase_date', 'tax_year', 'quality'] as $removed) {
             $this->assertArrayNotHasKey($removed, $fresh->getAttributes());
         }

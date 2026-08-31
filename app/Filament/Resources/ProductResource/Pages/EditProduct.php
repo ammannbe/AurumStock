@@ -78,6 +78,8 @@ class EditProduct extends EditRecord
                                 ->button(),
                         ])
                         ->send();
+
+                    $this->fillForm();
                 }),
         ];
     }

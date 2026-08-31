@@ -131,6 +131,13 @@ class ProductTemplate extends Model
         $attributes['name'] = $name ?? $product->name;
         $attributes['assets'] = $product->assets;
 
-        return static::query()->create($attributes);
+        $template = static::query()->create($attributes);
+
+        $product->forceFill([
+            'template_id' => $template->id,
+            'source_hash' => $template->source_hash,
+        ])->save();
+
+        return $template;
     }
 }
