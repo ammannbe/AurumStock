@@ -54,6 +54,7 @@ class AppServiceProvider extends ServiceProvider
             [
                 public_path('js/app/product-previews.js'),
                 public_path('css/app/overlay.css'),
+                public_path('fonts/app/noto-sans-mongolian.woff2'),
             ],
         );
 

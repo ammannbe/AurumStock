@@ -98,3 +98,19 @@
     height: 100% !important;
     object-fit: cover;
 }
+
+/* Traditional Mongolian glyphs are missing from the default UI font, so inscriptions render as tofu. */
+@font-face {
+    font-family: 'Noto Sans Mongolian';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url('/fonts/app/noto-sans-mongolian.woff2') format('woff2');
+    unicode-range: U+1800-18AF, U+200C-200D, U+202F, U+2048-2049, U+2460-2473,
+        U+25CC, U+3001-3002, U+3008-300F, U+FE3D-FE3E, U+FE41-FE44, U+11660-1166C;
+}
+
+/* The unicode-range above limits the fallback to Mongolian, so other scripts keep the UI font. */
+.aurum-inscription {
+    font-family: 'Noto Sans Mongolian', var(--font-family), ui-sans-serif, system-ui, sans-serif;
+}

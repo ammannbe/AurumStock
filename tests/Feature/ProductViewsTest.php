@@ -52,6 +52,18 @@ class ProductViewsTest extends TestCase
         $response->assertDontSee('Add to Zusätzliche Medien', escape: false);
     }
 
+    public function test_the_inscription_fields_use_the_mongolian_capable_font(): void
+    {
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        $response = $this->get('/app/products/create');
+
+        $response->assertStatus(200);
+        $response->assertSee('aurum-inscription', escape: false);
+        $this->assertFileExists(public_path('fonts/app/noto-sans-mongolian.woff2'));
+    }
+
     public function test_the_products_table_renders_all_media_in_the_slider(): void
     {
         $user = User::factory()->create();

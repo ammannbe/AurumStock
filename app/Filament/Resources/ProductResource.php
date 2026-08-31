@@ -367,11 +367,13 @@ class ProductResource extends Resource
                     ->label(__('Text Front'))
                     ->nullable()
                     ->maxLength(255)
+                    ->extraInputAttributes(['class' => 'aurum-inscription'])
                     ->columnSpan(4),
                 TextInput::make('text_back')
                     ->label(__('Text Back'))
                     ->nullable()
                     ->maxLength(255)
+                    ->extraInputAttributes(['class' => 'aurum-inscription'])
                     ->columnSpan(4),
                 Repeater::make('assets')
                     ->label(__('Additional Media'))
@@ -850,8 +852,8 @@ class ProductResource extends Resource
                 ]),
             TextColumn::make('year')->label(__('Year'))->sortable()->toggleable(),
 
-            TextColumn::make('text_front')->label(__('Text Front'))->limit(30)->toggleable(isToggledHiddenByDefault: true)->searchable(),
-            TextColumn::make('text_back')->label(__('Text Back'))->limit(30)->toggleable(isToggledHiddenByDefault: true)->searchable(),
+            TextColumn::make('text_front')->label(__('Text Front'))->limit(30)->extraAttributes(['class' => 'aurum-inscription'])->toggleable(isToggledHiddenByDefault: true)->searchable(),
+            TextColumn::make('text_back')->label(__('Text Back'))->limit(30)->extraAttributes(['class' => 'aurum-inscription'])->toggleable(isToggledHiddenByDefault: true)->searchable(),
             TextColumn::make('quality')
                 ->label(__('Quality'))
                 ->getStateUsing(fn ($record) => $record->quality ? Quality::from($record->quality)->label() : '-')

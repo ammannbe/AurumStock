@@ -167,11 +167,13 @@ class ProductTemplateResource extends Resource
                     ->label(__('Text Front'))
                     ->nullable()
                     ->maxLength(255)
+                    ->extraInputAttributes(['class' => 'aurum-inscription'])
                     ->columnSpan(4),
                 TextInput::make('text_back')
                     ->label(__('Text Back'))
                     ->nullable()
                     ->maxLength(255)
+                    ->extraInputAttributes(['class' => 'aurum-inscription'])
                     ->columnSpan(4),
                 Repeater::make('assets')
                     ->label(__('Additional Media'))
