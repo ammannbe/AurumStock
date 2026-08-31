@@ -380,7 +380,6 @@ class ProductResource extends Resource
                     ->addActionLabel(__('Add media'))
                     ->grid(['default' => 1, 'md' => 2, 'xl' => 3])
                     ->schema([
-                        TextInput::make('label')->label(__('Label'))->nullable(),
                         FileUpload::make('path')
                             ->label(__('File'))
                             ->directory('products/media')
@@ -389,6 +388,10 @@ class ProductResource extends Resource
                             ->panelLayout('integrated')
                             ->panelAspectRatio('3:2')
                             ->required(),
+                        TextInput::make('label')
+                            ->placeholder(__('Label'))
+                            ->hiddenLabel()
+                            ->nullable(),
                     ])
                     ->reorderable()
                     ->collapsible()
