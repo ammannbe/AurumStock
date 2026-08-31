@@ -70,4 +70,16 @@ class ProductTableFilterTest extends TestCase
             ->sortTable('purchase_date')
             ->assertCanSeeTableRecords([$older, $newer], inOrder: true);
     }
+
+    public function test_can_sort_products_by_name(): void
+    {
+        $first = Product::factory()->create(['user_id' => $this->user->id, 'name' => 'Alpha Coin']);
+        $last = Product::factory()->create(['user_id' => $this->user->id, 'name' => 'Zeta Coin']);
+
+        Livewire::test(ListProducts::class)
+            ->sortTable('name')
+            ->assertCanSeeTableRecords([$first, $last], inOrder: true)
+            ->sortTable('name', 'desc')
+            ->assertCanSeeTableRecords([$last, $first], inOrder: true);
+    }
 }

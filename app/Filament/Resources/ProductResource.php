@@ -430,7 +430,7 @@ class ProductResource extends Resource
                 ->color(fn (Material $state) => $state->color())
                 ->tooltip(fn (Material $state) => $state->label())
                 ->toggleable(),
-            TextColumn::make('name')->searchable()->label(__('Name')),
+            TextColumn::make('name')->searchable()->sortable()->label(__('Name')),
             TextColumn::make('template_sync')
                 ->label(__('Template'))
                 ->badge()
