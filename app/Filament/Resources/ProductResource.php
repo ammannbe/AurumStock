@@ -51,6 +51,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Query\Builder;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -130,7 +131,7 @@ class ProductResource extends Resource
     /**
      * @return array<int, string>
      */
-    protected static function depositoryOptionsForCurrentUser(): array
+    public static function depositoryOptionsForCurrentUser(): array
     {
         $userId = Auth::id();
 
@@ -915,7 +916,11 @@ class ProductResource extends Resource
         ])->filters([
             SelectFilter::make('material')->options(collect(Material::cases())->mapWithKeys(fn ($c) => [$c->value => $c->label()])->toArray()),
             SelectFilter::make('type')->options(collect(ProductType::cases())->mapWithKeys(fn ($c) => [$c->value => $c->label()])->toArray()),
-            SelectFilter::make('depository_id')->label(__('Depository'))->options(fn (): array => static::depositoryOptionsForCurrentUser()),
+            // Rendered separately at the start of the table toolbar, see AppServiceProvider.
+            SelectFilter::make('depository_id')
+                ->label(__('Depository'))
+                ->options(fn (): array => static::depositoryOptionsForCurrentUser())
+                ->indicateUsing(fn (): array => []),
             SelectFilter::make('manufacturer')
                 ->label(__('Manufacturer'))
                 ->options(fn (): array => static::manufacturerFilterOptions())
@@ -947,7 +952,11 @@ class ProductResource extends Resource
 
                     return $indicators;
                 }),
-        ])->defaultSort('purchase_date', 'desc')->summaries(pageCondition: false);
+        ])
+            ->filtersFormSchema(fn (array $filters): array => array_values(Arr::except($filters, ['depository_id'])))
+            ->persistFiltersInSession()
+            ->defaultSort('purchase_date', 'desc')
+            ->summaries(pageCondition: false);
     }
 
     public static function getModelLabel(): string

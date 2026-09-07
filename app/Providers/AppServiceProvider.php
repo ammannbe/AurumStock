@@ -3,11 +3,15 @@
 namespace App\Providers;
 
 use App\Console\Kernel;
+use App\Filament\Resources\ProductResource\Pages\ListProducts;
 use Filament\Support\Assets\Css;
 use Filament\Support\Assets\Js;
 use Filament\Support\Colors\Color;
 use Filament\Support\Facades\FilamentAsset;
 use Filament\Support\Facades\FilamentColor;
+use Filament\Support\Facades\FilamentView;
+use Filament\Tables\View\TablesRenderHook;
+use Illuminate\Contracts\View\View;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -45,6 +49,12 @@ class AppServiceProvider extends ServiceProvider
             'platinum' => Color::Neutral,
             'palladium' => Color::Gray,
         ]);
+
+        FilamentView::registerRenderHook(
+            TablesRenderHook::TOOLBAR_START,
+            fn (): View => view('filament.tables.product-depository-filter'),
+            scopes: ListProducts::class,
+        );
     }
 
     private function assetVersion(): string

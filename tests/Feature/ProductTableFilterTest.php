@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Filament\Resources\ProductResource\Pages\ListProducts;
+use App\Models\Depository;
 use App\Models\Product;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -81,5 +82,33 @@ class ProductTableFilterTest extends TestCase
             ->assertCanSeeTableRecords([$first, $last], inOrder: true)
             ->sortTable('name', 'desc')
             ->assertCanSeeTableRecords([$last, $first], inOrder: true);
+    }
+
+    public function test_can_filter_products_by_depository(): void
+    {
+        $depository = Depository::factory()->create(['user_id' => $this->user->id]);
+        $otherDepository = Depository::factory()->create(['user_id' => $this->user->id]);
+        $matching = Product::factory()->create(['user_id' => $this->user->id, 'depository_id' => $depository->id]);
+        $other = Product::factory()->create(['user_id' => $this->user->id, 'depository_id' => $otherDepository->id]);
+
+        Livewire::test(ListProducts::class)
+            ->filterTable('depository_id', $depository->id)
+            ->assertCanSeeTableRecords([$matching])
+            ->assertCanNotSeeTableRecords([$other]);
+    }
+
+    public function test_filters_are_restored_from_the_session(): void
+    {
+        $depository = Depository::factory()->create(['user_id' => $this->user->id]);
+        $otherDepository = Depository::factory()->create(['user_id' => $this->user->id]);
+        $matching = Product::factory()->create(['user_id' => $this->user->id, 'depository_id' => $depository->id]);
+        $other = Product::factory()->create(['user_id' => $this->user->id, 'depository_id' => $otherDepository->id]);
+
+        Livewire::test(ListProducts::class)
+            ->filterTable('depository_id', $depository->id);
+
+        Livewire::test(ListProducts::class)
+            ->assertCanSeeTableRecords([$matching])
+            ->assertCanNotSeeTableRecords([$other]);
     }
 }
