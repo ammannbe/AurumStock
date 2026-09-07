@@ -914,8 +914,8 @@ class ProductResource extends Resource
                 ->icon('heroicon-o-arrow-down-tray')
                 ->action(fn (ListRecords $livewire) => static::exportFilteredRecords($livewire, 'ods')),
         ])->filters([
-            SelectFilter::make('material')->options(collect(Material::cases())->mapWithKeys(fn ($c) => [$c->value => $c->label()])->toArray()),
-            SelectFilter::make('type')->options(collect(ProductType::cases())->mapWithKeys(fn ($c) => [$c->value => $c->label()])->toArray()),
+            SelectFilter::make('material')->label(__('Material'))->options(collect(Material::cases())->mapWithKeys(fn ($c) => [$c->value => $c->label()])->toArray()),
+            SelectFilter::make('type')->label(__('Type'))->options(collect(ProductType::cases())->mapWithKeys(fn ($c) => [$c->value => $c->label()])->toArray()),
             // Rendered separately at the start of the table toolbar, see AppServiceProvider.
             SelectFilter::make('depository_id')
                 ->label(__('Depository'))
@@ -926,7 +926,7 @@ class ProductResource extends Resource
                 ->options(fn (): array => static::manufacturerFilterOptions())
                 ->searchable()
                 ->multiple(),
-            SelectFilter::make('year')->options(fn () => Product::query()->distinct()->pluck('year', 'year')->filter()->toArray()),
+            SelectFilter::make('year')->label(__('Year'))->options(fn () => Product::query()->distinct()->pluck('year', 'year')->filter()->toArray()),
             SelectFilter::make('price_currency')->label(__('Purchase Currency'))->options(fn () => Product::query()->distinct()->pluck('price_currency', 'price_currency')->filter()->toArray()),
             SelectFilter::make('tax_year')
                 ->label(__('Tax Year'))

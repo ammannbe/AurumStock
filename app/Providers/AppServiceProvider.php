@@ -4,6 +4,8 @@ namespace App\Providers;
 
 use App\Console\Kernel;
 use App\Filament\Resources\ProductResource\Pages\ListProducts;
+use App\Support\SwissGermanTranslationLoader;
+use Filament\Forms\Components\FileUpload;
 use Filament\Support\Assets\Css;
 use Filament\Support\Assets\Js;
 use Filament\Support\Colors\Color;
@@ -11,6 +13,7 @@ use Filament\Support\Facades\FilamentAsset;
 use Filament\Support\Facades\FilamentColor;
 use Filament\Support\Facades\FilamentView;
 use Filament\Tables\View\TablesRenderHook;
+use Illuminate\Contracts\Translation\Loader;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\ServiceProvider;
 
@@ -25,6 +28,11 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(
             \Illuminate\Contracts\Console\Kernel::class,
             Kernel::class
+        );
+
+        $this->app->extend(
+            'translation.loader',
+            fn (Loader $loader): Loader => new SwissGermanTranslationLoader($loader),
         );
     }
 
@@ -55,6 +63,13 @@ class AppServiceProvider extends ServiceProvider
             fn (): View => view('filament.tables.product-depository-filter'),
             scopes: ListProducts::class,
         );
+
+        // FilePond only bundles a "de" locale, so de_CH would show English.
+        FileUpload::configureUsing(fn (FileUpload $upload) => $upload->placeholder(
+            fn (): string => __('Drag & Drop your files or :browse', [
+                'browse' => '<span class="filepond--label-action">'.__('Browse').'</span>',
+            ]),
+        ));
     }
 
     private function assetVersion(): string
