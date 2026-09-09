@@ -201,5 +201,8 @@
   "Stock Price History": "Stock Price History",
   "Technical data": "Technical data",
   "Drag & Drop your files or :browse": "Drag & Drop your files or :browse",
-  "Browse": "Browse"
+  "Browse": "Browse",
+  "No data": "No data",
+  ":count pcs": ":count pcs",
+  "since :date": "since :date"
 }

@@ -15,6 +15,11 @@ class ExchangesWidget extends TableWidget
 {
     protected static ?string $heading = null;
 
+    protected function getTablePollingInterval(): ?string
+    {
+        return '60s';
+    }
+
     public function getHeading(): ?string
     {
         return __('Exchange Rates').' — '.$this->headlineRates();

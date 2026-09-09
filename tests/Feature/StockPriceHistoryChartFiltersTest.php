@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Enums\Material;
+use App\Filament\Widgets\MaterialPriceHistoryChartWidget;
 use App\Filament\Widgets\StockPriceHistoryChartWidget;
 use App\Models\StockPrice;
 use App\Models\StockPriceHistory;
@@ -89,10 +91,46 @@ class StockPriceHistoryChartFiltersTest extends TestCase
         $component = Livewire::test(StockPriceHistoryChartWidget::class)
             ->set('filters.preset', '1m');
 
-        $widget = $component->instance();
+        $widget = new MaterialPriceHistoryChartWidget;
+        $widget->materialValue = 1;
+        $widget->startDate = $component->get('filters.startDate');
+        $widget->endDate = $component->get('filters.endDate');
+
         $data = (new \ReflectionMethod($widget, 'getData'))->invoke($widget);
 
         // Only the two entries within the last 30 days fall in range.
         $this->assertCount(2, $data['labels']);
+    }
+
+    public function test_shorthand_buttons_apply_the_preset(): void
+    {
+        Livewire::test(StockPriceHistoryChartWidget::class)
+            ->call('applyPreset', '3m')
+            ->assertSet('filters.preset', '3m')
+            ->assertSet('filters.startDate', now()->subDays(90)->toDateString());
+
+        $this->assertSame('3m', session('widgets.stock_price_history.filters.preset'));
+    }
+
+    public function test_it_renders_one_chart_per_material(): void
+    {
+        Livewire::test(StockPriceHistoryChartWidget::class)
+            ->assertSee(Material::Gold->label())
+            ->assertSee(Material::Silver->label())
+            ->assertSee(Material::Platinum->label())
+            ->assertSee(Material::Palladium->label());
+    }
+
+    public function test_the_y_axis_does_not_begin_at_zero(): void
+    {
+        $widget = new MaterialPriceHistoryChartWidget;
+        $widget->materialValue = 1;
+        $widget->startDate = now()->subDays(30)->toDateString();
+        $widget->endDate = now()->toDateString();
+
+        $options = (new \ReflectionMethod($widget, 'getOptions'))->invoke($widget);
+
+        $this->assertFalse($options['scales']['y']['beginAtZero']);
+        $this->assertGreaterThan(0, $options['scales']['y']['suggestedMin']);
     }
 }

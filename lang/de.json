@@ -201,5 +201,8 @@
   "Stock Price History": "Edelmetallkursverlauf",
   "Technical data": "Technische Daten",
   "Drag & Drop your files or :browse": "Dateien hierher ziehen oder :browse",
-  "Browse": "durchsuchen"
+  "Browse": "durchsuchen",
+  "No data": "Keine Daten",
+  ":count pcs": ":count Stk.",
+  "since :date": "seit :date"
 }

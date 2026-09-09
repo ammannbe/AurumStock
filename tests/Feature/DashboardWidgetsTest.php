@@ -4,7 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\Currency;
 use App\Filament\Widgets\ExchangesWidget;
-use App\Filament\Widgets\StockPriceHistoryChartWidget;
+use App\Filament\Widgets\MaterialPriceHistoryChartWidget;
 use App\Filament\Widgets\StockPricesWidget;
 use App\Models\Exchange;
 use App\Models\StockPrice;
@@ -25,6 +25,19 @@ class DashboardWidgetsTest extends TestCase
         parent::setUp();
 
         CurrencyConverter::flushCache();
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function chartData(string $startDate, string $endDate, int $material = 1): array
+    {
+        $widget = new MaterialPriceHistoryChartWidget;
+        $widget->materialValue = $material;
+        $widget->startDate = $startDate;
+        $widget->endDate = $endDate;
+
+        return (new \ReflectionMethod($widget, 'getData'))->invoke($widget);
     }
 
     public function test_stock_prices_are_shown_in_the_preferred_currency(): void
@@ -56,13 +69,7 @@ class DashboardWidgetsTest extends TestCase
 
         $this->actingAs(User::factory()->create());
 
-        $widget = new StockPriceHistoryChartWidget;
-        $widget->filters = [
-            'startDate' => $start->toDateString(),
-            'endDate' => now()->toDateString(),
-        ];
-
-        $data = (new \ReflectionMethod($widget, 'getData'))->invoke($widget);
+        $data = $this->chartData($start->toDateString(), now()->toDateString());
 
         // Weekly is the coarsest grouping, so roughly one point per week remains.
         $this->assertGreaterThan(intdiv($days, 7) - 5, count($data['labels']));
@@ -90,13 +97,7 @@ class DashboardWidgetsTest extends TestCase
 
         $this->actingAs(User::factory()->create());
 
-        $widget = new StockPriceHistoryChartWidget;
-        $widget->filters = [
-            'startDate' => $start->toDateString(),
-            'endDate' => now()->toDateString(),
-        ];
-
-        $data = (new \ReflectionMethod($widget, 'getData'))->invoke($widget);
+        $data = $this->chartData($start->toDateString(), now()->toDateString());
 
         $this->assertCount(301, $data['labels']);
         $this->assertSame(0, $data['datasets'][0]['pointRadius']);
@@ -118,13 +119,7 @@ class DashboardWidgetsTest extends TestCase
 
         $this->actingAs(User::factory()->create());
 
-        $widget = new StockPriceHistoryChartWidget;
-        $widget->filters = [
-            'startDate' => $start->toDateString(),
-            'endDate' => now()->toDateString(),
-        ];
-
-        $data = (new \ReflectionMethod($widget, 'getData'))->invoke($widget);
+        $data = $this->chartData($start->toDateString(), now()->toDateString());
 
         $this->assertCount(21, $data['labels']);
         $this->assertSame(2, $data['datasets'][0]['pointRadius']);
@@ -146,13 +141,7 @@ class DashboardWidgetsTest extends TestCase
 
         $this->actingAs(User::factory()->create());
 
-        $widget = new StockPriceHistoryChartWidget;
-        $widget->filters = [
-            'startDate' => $start->toDateString(),
-            'endDate' => $start->toDateString(),
-        ];
-
-        $data = (new \ReflectionMethod($widget, 'getData'))->invoke($widget);
+        $data = $this->chartData($start->toDateString(), $start->toDateString());
 
         $this->assertCount(6, $data['labels']);
 
@@ -175,7 +164,8 @@ class DashboardWidgetsTest extends TestCase
 
         $this->actingAs(User::factory()->create());
 
-        Livewire::test(StockPricesWidget::class)->assertSee(__('30d'));
+        // One averaged point per day, so the five daily snapshots stay distinct.
+        $this->assertCount(5, $this->sparklineFor($stockPrice));
     }
 
     public function test_stock_price_sparkline_switches_to_24h_with_hourly_data(): void
@@ -192,7 +182,20 @@ class DashboardWidgetsTest extends TestCase
 
         $this->actingAs(User::factory()->create());
 
-        Livewire::test(StockPricesWidget::class)->assertSee(__('24h'));
+        // Hourly snapshots are kept individually rather than averaged per day.
+        $this->assertCount(6, $this->sparklineFor($stockPrice));
+    }
+
+    /**
+     * @return array<int, float>
+     */
+    private function sparklineFor(StockPrice $stockPrice): array
+    {
+        $widget = new StockPricesWidget;
+
+        $hourly = (new \ReflectionMethod($widget, 'hasHourlySnapshots'))->invoke($widget, $stockPrice);
+
+        return (new \ReflectionMethod($widget, 'sparkline'))->invoke($widget, $stockPrice, $hourly);
     }
 
     public function test_exchange_rates_are_ordered_preferred_then_usd_then_alphabetically(): void
