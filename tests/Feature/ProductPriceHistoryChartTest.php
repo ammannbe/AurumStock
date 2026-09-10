@@ -139,6 +139,68 @@ class ProductPriceHistoryChartTest extends TestCase
         $this->assertNull($this->datasetLabelled($data, __('Purchase Date')));
     }
 
+    public function test_it_shows_history_from_before_the_purchase(): void
+    {
+        $this->seedHistory();
+        $product = $this->makeProduct(now()->subDays(100)->toDateString());
+
+        $data = $this->dataFor($this->widgetFor($product));
+
+        // 10% of the 100 day range is prepended, so the chart starts ~110 days back.
+        $this->assertLessThan(
+            now()->subDays(100)->toDateString(),
+            $data['labels'][0],
+        );
+        $this->assertGreaterThanOrEqual(
+            now()->subDays(120)->toDateString(),
+            $data['labels'][0],
+        );
+    }
+
+    public function test_the_lead_in_never_predates_the_recorded_history(): void
+    {
+        $this->seedHistory();
+
+        // The seeded history only reaches back 400 days.
+        $product = $this->makeProduct(now()->subDays(390)->toDateString());
+
+        $data = $this->dataFor($this->widgetFor($product));
+
+        $this->assertGreaterThanOrEqual(
+            now()->subDays(400)->toDateString(),
+            $data['labels'][0],
+        );
+    }
+
+    public function test_the_lead_in_only_applies_to_the_purchase_range(): void
+    {
+        $this->seedHistory();
+        $product = $this->makeProduct(now()->subDays(100)->toDateString());
+
+        $widget = $this->widgetFor($product);
+        $widget->filters['preset'] = '1m';
+        $widget->updatedFilters('1m', 'preset');
+
+        $data = $this->dataFor($widget);
+
+        $this->assertGreaterThanOrEqual(
+            now()->subDays(30)->toDateString(),
+            $data['labels'][0],
+        );
+    }
+
+    public function test_the_y_axis_does_not_begin_at_zero(): void
+    {
+        $this->seedHistory();
+        $product = $this->makeProduct(now()->subDays(100)->toDateString());
+
+        $widget = $this->widgetFor($product);
+        $options = (new \ReflectionMethod($widget, 'getOptions'))->invoke($widget);
+
+        $this->assertFalse($options['scales']['y']['beginAtZero']);
+        $this->assertGreaterThan(0, $options['scales']['y']['suggestedMin']);
+    }
+
     /**
      * @param  array<string, mixed>  $data
      * @return array<string, mixed>|null

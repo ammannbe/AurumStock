@@ -1,9 +1,10 @@
-/* Chart.js sizes the canvas from its container, which is otherwise height-less. */
-.aurum-metal-charts {
-    --aurum-metal-chart-height: 480px;
+:root {
+    --aurum-metal-chart-height: 380px;
 }
 
-.aurum-metal-charts .fi-wi-chart-canvas-ctn {
+/* Chart.js sizes the canvas from its container, which is otherwise height-less.
+   Matching on the inline variable keeps this to charts that opted in. */
+.fi-wi-chart-canvas-ctn:has(canvas[style*='--aurum-metal-chart-height']) {
     height: var(--aurum-metal-chart-height);
 }
 
@@ -14,7 +15,7 @@
 }
 
 @media (min-width: 640px) {
-    .aurum-metal-charts {
+    :root {
         --aurum-metal-chart-height: 320px;
     }
 

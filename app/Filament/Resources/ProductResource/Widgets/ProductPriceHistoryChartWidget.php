@@ -20,7 +20,8 @@ class ProductPriceHistoryChartWidget extends ChartWidget
 
     public ?Product $record = null;
 
-    protected ?string $maxHeight = '320px';
+    // Resolved responsively by the dashboard stylesheet.
+    protected ?string $maxHeight = 'var(--aurum-metal-chart-height)';
 
     /**
      * Above this many days the chart falls back to weekly averages.
@@ -31,6 +32,11 @@ class ProductPriceHistoryChartWidget extends ChartWidget
      * Above this many points the markers are hidden so the line stays readable.
      */
     private const MAX_POINTS_WITH_MARKERS = 60;
+
+    /**
+     * Share of the shown range prepended before the purchase, for context.
+     */
+    private const PURCHASE_LEAD_IN = 0.1;
 
     /**
      * Preset ranges, mapped to the number of days they span. Null means all data.
@@ -203,7 +209,30 @@ class ProductPriceHistoryChartWidget extends ChartWidget
             [$start, $end] = [$end, $start];
         }
 
-        return [$start, $end];
+        return [$this->withPurchaseLeadIn($start, $end), $end];
+    }
+
+    /**
+     * Pull the start back so the purchase is preceded by some context, but never
+     * further than the oldest recorded day.
+     */
+    private function withPurchaseLeadIn(Carbon $start, Carbon $end): Carbon
+    {
+        $purchaseDate = $this->record?->purchase_date;
+
+        if (! $purchaseDate || ! $start->isSameDay($purchaseDate)) {
+            return $start;
+        }
+
+        $leadInDays = (int) round($start->diffInDays($end) * self::PURCHASE_LEAD_IN);
+
+        if ($leadInDays < 1) {
+            return $start;
+        }
+
+        $earliest = Carbon::parse($this->earliestRecordedDay());
+
+        return $start->copy()->subDays($leadInDays)->max($earliest);
     }
 
     /**
@@ -368,6 +397,43 @@ class ProductPriceHistoryChartWidget extends ChartWidget
         return $purchaseDate
             ? CurrencyConverter::fromUsdOn($priceInUsd, $purchaseDate)
             : CurrencyConverter::fromUsd($priceInUsd);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function getOptions(): array
+    {
+        $values = [];
+
+        // The purchase price line matters for the scale too, so include every dataset.
+        foreach ($this->getCachedData()['datasets'] ?? [] as $dataset) {
+            foreach ($dataset['data'] ?? [] as $value) {
+                if (is_numeric($value)) {
+                    $values[] = (float) $value;
+                }
+            }
+        }
+
+        $scale = ['beginAtZero' => false];
+
+        if ($values !== []) {
+            $min = min($values);
+            $max = max($values);
+            // A flat series would otherwise collapse into a zero-height axis.
+            $padding = $max > $min ? ($max - $min) * 0.05 : max(abs($max) * 0.01, 0.01);
+
+            $scale['suggestedMin'] = round($min - $padding, 2);
+            $scale['suggestedMax'] = round($max + $padding, 2);
+        }
+
+        return [
+            'maintainAspectRatio' => false,
+            'scales' => [
+                'y' => $scale,
+                'x' => ['ticks' => ['maxTicksLimit' => 8]],
+            ],
+        ];
     }
 
     protected function getType(): string
