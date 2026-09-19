@@ -50,6 +50,7 @@ class AppServiceProvider extends ServiceProvider
             Js::make('product-previews')->package('app'),
             Css::make('overlay')->package('app'),
             Css::make('dashboard')->package('app'),
+            Css::make('receipts')->package('app'),
         ]);
 
         FilamentColor::register([
@@ -81,6 +82,7 @@ class AppServiceProvider extends ServiceProvider
                 public_path('js/app/product-previews.js'),
                 public_path('css/app/overlay.css'),
                 public_path('css/app/dashboard.css'),
+                public_path('css/app/receipts.css'),
                 public_path('fonts/app/noto-sans-mongolian.woff2'),
             ],
         );

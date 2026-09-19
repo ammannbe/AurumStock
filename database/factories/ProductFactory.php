@@ -21,6 +21,7 @@ class ProductFactory extends Factory
             'depository_id' => function (array $attributes) {
                 return Depository::factory()->create(['user_id' => $attributes['user_id'] ?? null])->getKey();
             },
+            'order_id' => null,
             'name' => $this->faker->word,
             'type' => 1,
             'material' => 1,

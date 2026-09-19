@@ -204,5 +204,21 @@
   "Browse": "durchsuchen",
   "No data": "Keine Daten",
   ":count pcs": ":count Stk.",
-  "since :date": "seit :date"
+  "since :date": "seit :date",
+  "Order": "Bestellung",
+  "Orders": "Bestellungen",
+  "Order Number": "Bestellnummer",
+  "Order Date": "Bestelldatum",
+  "Order Total": "Bestellsumme",
+  "Supplier": "Lieferant",
+  "Suppliers": "Lieferanten",
+  "Website": "Webseite",
+  "Receipts": "Belege",
+  "Add receipt": "Beleg hinzufügen",
+  "No order selected.": "Keine Bestellung ausgewählt.",
+  "No receipts on this order yet.": "Noch keine Belege für diese Bestellung.",
+  "Preview": "Vorschau",
+  "Receipt": "Beleg",
+  "Close": "Schliessen",
+  "Preview not available for this file type.": "Für diesen Dateityp ist keine Vorschau verfügbar."
 }

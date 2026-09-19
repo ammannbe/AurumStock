@@ -201,5 +201,21 @@
   "Stock Price History": "Edelmetallkursverlauf",
   "Technical data": "Technische Daten",
   "Drag & Drop your files or :browse": "Dateien hierher ziehen oder :browse",
-  "Browse": "durchsuchen"
+  "Browse": "durchsuchen",
+  "Order": "Bestellung",
+  "Orders": "Bestellungen",
+  "Order Number": "Bestellnummer",
+  "Order Date": "Bestelldatum",
+  "Order Total": "Bestellsumme",
+  "Supplier": "Lieferant",
+  "Suppliers": "Lieferanten",
+  "Website": "Webseite",
+  "Receipts": "Belege",
+  "Add receipt": "Beleg hinzufügen",
+  "No order selected.": "Keine Bestellung ausgewählt.",
+  "No receipts on this order yet.": "Noch keine Belege für diese Bestellung.",
+  "Preview": "Vorschau",
+  "Receipt": "Beleg",
+  "Close": "Schliessen",
+  "Preview not available for this file type.": "Für diesen Dateityp ist keine Vorschau verfügbar."
 }

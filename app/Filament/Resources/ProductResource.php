@@ -15,6 +15,7 @@ use App\Filament\Resources\ProductResource\Pages\CreateProduct;
 use App\Filament\Resources\ProductResource\Pages\EditProduct;
 use App\Filament\Resources\ProductResource\Pages\ListProducts;
 use App\Models\Depository;
+use App\Models\Order;
 use App\Models\Product;
 use App\Models\ProductTemplate;
 use App\Support\CurrencyConverter;
@@ -31,13 +32,16 @@ use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Hidden;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Actions;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\IconColumn;
@@ -48,12 +52,14 @@ use Filament\Tables\Columns\ViewColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\HtmlString;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class ProductResource extends Resource
@@ -126,6 +132,70 @@ class ProductResource extends Resource
                 $value => Manufacturer::tryFrom($value)?->label() ?? $value,
             ])
             ->all();
+    }
+
+    protected static function orderForCurrentUser(mixed $orderId): ?Order
+    {
+        if (! $orderId) {
+            return null;
+        }
+
+        return Order::query()->whereKey($orderId)->where('user_id', Auth::id())->first();
+    }
+
+    /**
+     * Receipts belong to the order, so they are only linked here.
+     */
+    protected static function orderReceiptsPlaceholder(mixed $orderId): HtmlString|string
+    {
+        $order = static::orderForCurrentUser($orderId);
+
+        if (! $order) {
+            return __('No order selected.');
+        }
+
+        $receipts = $order->previewableReceipts();
+
+        if ($receipts === []) {
+            return __('No receipts on this order yet.');
+        }
+
+        $links = array_map(fn (array $receipt): string => sprintf(
+            '<a href="%s" target="_blank" rel="noopener noreferrer" class="fi-link fi-size-sm">%s</a>',
+            e($receipt['url']),
+            e($receipt['label'] ?? basename($receipt['path'])),
+        ), $receipts);
+
+        return new HtmlString('<div class="fi-receipt-links">'.implode('', $links).'</div>');
+    }
+
+    /**
+     * One preview action per receipt of the currently selected order.
+     *
+     * @return array<int, Action>
+     */
+    protected static function orderReceiptActions(Get $get): array
+    {
+        $order = static::orderForCurrentUser($get('order_id'));
+
+        if (! $order) {
+            return [];
+        }
+
+        $receipts = $order->previewableReceipts();
+
+        return array_map(
+            fn (array $receipt, int $index): Action => Action::make('previewOrderReceipt'.$index)
+                ->label($receipt['label'] ?? basename($receipt['path']))
+                ->icon('heroicon-m-eye')
+                ->link()
+                ->modalHeading(__('Receipt'))
+                ->modalContent(fn (): View => view('filament.orders.receipt-preview', ['receipts' => [$receipt]]))
+                ->modalSubmitAction(false)
+                ->modalCancelActionLabel(__('Close')),
+            $receipts,
+            array_keys($receipts),
+        );
     }
 
     /**
@@ -346,6 +416,38 @@ class ProductResource extends Resource
                     ->minValue(1900)
                     ->maxValue(2100)
                     ->nullable()
+                    ->columnSpan(4),
+
+                Select::make('order_id')
+                    ->label(__('Order'))
+                    ->options(fn () => OrderResource::optionsForCurrentUser())
+                    ->searchable()
+                    ->nullable()
+                    ->live()
+                    ->createOptionForm(OrderResource::formFields())
+                    ->createOptionUsing(fn (array $data) => Order::create([
+                        ...$data,
+                        'user_id' => Auth::id(),
+                    ])->getKey())
+                    ->afterStateUpdated(function (?int $state, Get $get, Set $set): void {
+                        if (! $state || $get('purchase_date')) {
+                            return;
+                        }
+
+                        $order = Order::query()->whereKey($state)->where('user_id', Auth::id())->first();
+
+                        if ($order?->order_date) {
+                            $set('purchase_date', $order->order_date->toDateString());
+                        }
+                    })
+                    ->columnSpan(4),
+                Placeholder::make('order_receipts')
+                    ->label(__('Receipts'))
+                    ->content(fn (Get $get): HtmlString|string => static::orderReceiptsPlaceholder($get('order_id')))
+                    ->visible(fn (Get $get): bool => static::orderForCurrentUser($get('order_id'))?->receiptEntries() === [] || ! $get('order_id'))
+                    ->columnSpan(4),
+                Actions::make(fn (Get $get): array => static::orderReceiptActions($get))
+                    ->label(__('Receipts'))
                     ->columnSpan(4),
             ])->columns(8)->columnSpanFull(),
 
@@ -880,6 +982,8 @@ class ProductResource extends Resource
                 ->toggleable(isToggledHiddenByDefault: true),
             TextColumn::make('mintage')->label(__('Mintage'))->numeric()->toggleable(isToggledHiddenByDefault: true),
             TextColumn::make('purchase_date')->label(__('Purchase Date'))->isoDate()->sortable()->toggleable(isToggledHiddenByDefault: true),
+            TextColumn::make('order.order_number')->label(__('Order Number'))->searchable()->sortable()->toggleable(isToggledHiddenByDefault: true),
+            TextColumn::make('order.supplier.name')->label(__('Supplier'))->searchable()->sortable()->toggleable(isToggledHiddenByDefault: true),
             TextColumn::make('tax_year')->label(__('Tax Year'))->sortable()->toggleable(isToggledHiddenByDefault: true),
 
             IconColumn::make('notes')
@@ -931,6 +1035,17 @@ class ProductResource extends Resource
             SelectFilter::make('tax_year')
                 ->label(__('Tax Year'))
                 ->options(fn () => Product::query()->whereNotNull('tax_year')->distinct()->orderByDesc('tax_year')->pluck('tax_year', 'tax_year')->toArray()),
+            SelectFilter::make('order_id')
+                ->label(__('Order'))
+                ->options(fn (): array => OrderResource::optionsForCurrentUser())
+                ->searchable(),
+            SelectFilter::make('supplier')
+                ->label(__('Supplier'))
+                ->options(fn (): array => SupplierResource::optionsForCurrentUser())
+                ->query(fn (EloquentBuilder $query, array $data): EloquentBuilder => $query->when(
+                    $data['value'] ?? null,
+                    fn (EloquentBuilder $q, $supplierId) => $q->whereHas('order', fn (EloquentBuilder $o) => $o->where('supplier_id', $supplierId))
+                )),
             Filter::make('purchase_date')
                 ->schema([
                     DatePicker::make('purchase_date_from')->label(__('Purchase Date From')),

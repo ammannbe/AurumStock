@@ -204,5 +204,21 @@
   "Browse": "Browse",
   "No data": "No data",
   ":count pcs": ":count pcs",
-  "since :date": "since :date"
+  "since :date": "since :date",
+  "Order": "Order",
+  "Orders": "Orders",
+  "Order Number": "Order Number",
+  "Order Date": "Order Date",
+  "Order Total": "Order Total",
+  "Supplier": "Supplier",
+  "Suppliers": "Suppliers",
+  "Website": "Website",
+  "Receipts": "Receipts",
+  "Add receipt": "Add receipt",
+  "No order selected.": "No order selected.",
+  "No receipts on this order yet.": "No receipts on this order yet.",
+  "Preview": "Preview",
+  "Receipt": "Receipt",
+  "Close": "Close",
+  "Preview not available for this file type.": "Preview not available for this file type."
 }

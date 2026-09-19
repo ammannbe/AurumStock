@@ -23,6 +23,11 @@ class MediaTypes
     ];
 
     /** @var array<int, string> */
+    public const DOCUMENT = [
+        'application/pdf',
+    ];
+
+    /** @var array<int, string> */
     private const VIDEO_EXTENSIONS = [
         'mp4',
         'm4v',
@@ -46,6 +51,16 @@ class MediaTypes
             'video' => self::VIDEO,
             default => [...self::IMAGE, ...self::VIDEO],
         };
+    }
+
+    /**
+     * Accepted MIME types for receipt uploads.
+     *
+     * @return array<int, string>
+     */
+    public static function forReceipts(): array
+    {
+        return [...self::DOCUMENT, ...self::IMAGE];
     }
 
     /**

@@ -16,6 +16,9 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             ApplyUserLocale::class,
         ]);
+
+        // Auth lives in the Filament user panel, so there is no global login route.
+        $middleware->redirectGuestsTo(fn () => '/app/login');
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

@@ -39,6 +39,7 @@ class Product extends Model
     protected $fillable = [
         'user_id',
         'depository_id',
+        'order_id',
         'template_id',
         'source_hash',
         'name',
@@ -314,6 +315,11 @@ class Product extends Model
     public function depository(): BelongsTo
     {
         return $this->belongsTo(Depository::class);
+    }
+
+    public function order(): BelongsTo
+    {
+        return $this->belongsTo(Order::class);
     }
 
     public function exchange(): HasOne
