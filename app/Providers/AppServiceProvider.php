@@ -13,8 +13,12 @@ use Filament\Support\Facades\FilamentAsset;
 use Filament\Support\Facades\FilamentColor;
 use Filament\Support\Facades\FilamentView;
 use Filament\Tables\View\TablesRenderHook;
+use Filament\View\PanelsRenderHook;
+use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Contracts\Translation\Loader;
 use Illuminate\Contracts\View\View;
+use Illuminate\Support\Facades\Vite;
+use Illuminate\Support\HtmlString;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -52,6 +56,12 @@ class AppServiceProvider extends ServiceProvider
             Css::make('dashboard')->package('app'),
             Css::make('receipts')->package('app'),
         ]);
+
+        // Bundled by Vite because it pulls in pdfjs-dist.
+        FilamentView::registerRenderHook(
+            PanelsRenderHook::HEAD_END,
+            fn (): Htmlable => new HtmlString(Vite::withEntryPoints(['resources/js/pdf-thumbnails.js'])->toHtml()),
+        );
 
         FilamentColor::register([
             'gold' => Color::Amber,

@@ -1,0 +1,29 @@
+/* FilePond recalculates the row height inline, so this has to win. */
+.filepond--item.aurum-pdf-thumb-ready {
+    height: 256px !important;
+}
+
+.aurum-pdf-thumb {
+    background-color: rgba(0, 0, 0, 0.03);
+}
+
+.aurum-pdf-thumb canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: top center;
+}
+
+/* Keeps the filename and action buttons legible on top of the page content. */
+.aurum-pdf-thumb::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        to bottom,
+        rgba(0, 0, 0, 0.55),
+        rgba(0, 0, 0, 0.1) 45%,
+        rgba(0, 0, 0, 0.55)
+    );
+}
