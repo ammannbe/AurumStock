@@ -264,7 +264,7 @@ class ProductPriceHistoryChartWidget extends ChartWidget
             return ['datasets' => [], 'labels' => []];
         }
 
-        $troyOunces = $product->weight_unit->toTroyOunce((float) $product->weight) * (int) $product->amount;
+        $troyOunces = $product->weight_unit->toTroyOunce($product->fine_weight) * (int) $product->amount;
 
         $interval = $this->resolveInterval($rows->count());
 

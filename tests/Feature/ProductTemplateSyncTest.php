@@ -207,7 +207,7 @@ class ProductTemplateSyncTest extends TestCase
             $this->assertStringNotContainsString('_', $label, "Field [{$field}] has no readable label.");
         }
 
-        $this->assertSame('Gewicht pro Stück', ProductTemplate::fieldLabel('weight'));
+        $this->assertSame('Bruttogewicht pro Stück', ProductTemplate::fieldLabel('weight'));
         $this->assertSame('Herkunftsland', ProductTemplate::fieldLabel('country_of_origin'));
     }
 

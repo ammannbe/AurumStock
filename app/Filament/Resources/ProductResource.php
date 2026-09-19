@@ -198,6 +198,60 @@ class ProductResource extends Resource
         );
     }
 
+    protected static function formatWeight(float $weight): string
+    {
+        return rtrim(rtrim(number_format($weight, 4, '.', ''), '0'), '.');
+    }
+
+    /**
+     * Per-material fine weight totals, in grams so materials stay comparable.
+     *
+     * @return array<int, Summarizer>
+     */
+    protected static function fineWeightSummarizers(): array
+    {
+        $sumFineGrams = fn (Builder $query): float => Product::whereIn('id', $query->pluck('id')->filter()->toArray())
+            ->get()
+            ->sum(fn (Product $p): float => $p->weight_unit->toGram($p->fine_weight) * $p->amount);
+
+        $summarizers = [];
+
+        foreach ([Material::Gold, Material::Silver, Material::Platinum, Material::Palladium] as $material) {
+            $summarizers[] = Summarizer::make()
+                ->label($material->label())
+                ->numeric()
+                ->suffix(' '.WeightUnit::Gram->symbol())
+                ->query(fn (Builder $query) => $query->where('material', $material->value))
+                ->using($sumFineGrams);
+        }
+
+        $summarizers[] = Summarizer::make()
+            ->label(__('Total'))
+            ->numeric()
+            ->suffix(' '.WeightUnit::Gram->symbol())
+            ->using($sumFineGrams);
+
+        return $summarizers;
+    }
+
+    /**
+     * Live "fine weight" hint shown under the gross weight input.
+     */
+    protected static function fineWeightHint(Get $get): string
+    {
+        $weight = (float) $get('weight');
+        $fineness = (float) $get('fineness');
+
+        if ($weight <= 0 || $fineness <= 0) {
+            return '';
+        }
+
+        $unit = WeightUnit::tryFrom((int) $get('weight_unit'))?->symbol() ?? '';
+        $fine = rtrim(rtrim(number_format($weight * ($fineness / 1000), 4, '.', ''), '0'), '.');
+
+        return __('Fine weight: :weight', ['weight' => trim($fine.' '.$unit)]);
+    }
+
     /**
      * @return array<int, string>
      */
@@ -332,17 +386,20 @@ class ProductResource extends Resource
                     ->minValue(1)
                     ->columnSpan(2),
                 TextInput::make('weight')
-                    ->label(__('Weight per Item'))
+                    ->label(__('Gross Weight per Item'))
                     ->numeric()
                     ->required()
                     ->default(1)
                     ->minValue(0)
                     ->step(0.0001)
+                    ->live(onBlur: true)
+                    ->helperText(fn (Get $get): string => static::fineWeightHint($get))
                     ->columnSpan(2),
                 Select::make('weight_unit')
                     ->options(collect(WeightUnit::cases())->mapWithKeys(fn ($c) => [$c->value => $c->label()])->toArray())
                     ->required()
                     ->default(WeightUnit::TroyOunce->value)
+                    ->live()
                     ->columnSpan(2),
 
                 Select::make('fineness')
@@ -350,6 +407,7 @@ class ProductResource extends Resource
                     ->options(collect(Fineness::cases())->mapWithKeys(fn ($c) => [$c->value => $c->value])->toArray())
                     ->searchable()
                     ->nullable()
+                    ->live()
                     ->columnSpan(2),
                 Select::make('quality')
                     ->label(__('Quality'))
@@ -553,10 +611,22 @@ class ProductResource extends Resource
                 ->toggleable(),
 
             TextColumn::make('weight')
-                ->label(__('Weight'))
+                ->label(__('Gross Weight'))
                 ->numeric()
                 ->suffix(fn (Product $record) => ' '.$record->weight_unit->symbol())
+                ->description(fn (Product $record): ?string => $record->fineness === null
+                    ? null
+                    : __('Fine weight: :weight', [
+                        'weight' => static::formatWeight($record->fine_weight).' '.$record->weight_unit->symbol(),
+                    ]))
                 ->toggleable(),
+            TextColumn::make('fine_weight_total')
+                ->label(__('Total Fine Weight'))
+                ->numeric()
+                ->getStateUsing(fn (Product $record): float => $record->fine_weight * $record->amount)
+                ->suffix(fn (Product $record) => ' '.$record->weight_unit->symbol())
+                ->toggleable(isToggledHiddenByDefault: true)
+                ->summarize(static::fineWeightSummarizers()),
             TextColumn::make('weight_total')
                 ->label(__('Total Weight'))
                 ->numeric()

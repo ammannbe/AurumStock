@@ -102,6 +102,28 @@ class Product extends Model
     ];
 
     /**
+     * Purity as a factor, e.g. 916.7 -> 0.9167. Defaults to pure when unset.
+     */
+    public function finenessFactor(): float
+    {
+        $fineness = (float) ($this->fineness ?? 0);
+
+        return $fineness > 0 ? $fineness / 1000 : 1.0;
+    }
+
+    /**
+     * Pure metal content of a single item, in the product's own weight unit.
+     *
+     * @return Attribute<float, never>
+     */
+    protected function fineWeight(): Attribute
+    {
+        return Attribute::make(
+            get: fn (): float => (float) $this->weight * $this->finenessFactor(),
+        );
+    }
+
+    /**
      * @return Attribute<int|float, never>
      */
     protected function materialValue(): Attribute
@@ -114,7 +136,7 @@ class Product extends Model
                     return null;
                 }
 
-                return $this->weight_unit->toTroyOunce($this->weight) * $stock->price;
+                return $this->weight_unit->toTroyOunce($this->fine_weight) * $stock->price;
             },
         );
     }

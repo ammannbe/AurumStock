@@ -84,7 +84,7 @@ class ProductTemplate extends Model
      * @var array<string, string>
      */
     private const FIELD_LABELS = [
-        'weight' => 'Weight per Item',
+        'weight' => 'Gross Weight per Item',
         'face_value_currency' => 'Face Value Currency',
         'front_image_path' => 'Front (image side)',
         'back_image_path' => 'Back (value side)',

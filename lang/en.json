@@ -232,5 +232,10 @@
   "Palladium Ingot": "Palladium Ingot",
   "Link Products": "Link Products",
   "Only products without an order, plus the ones already linked, can be selected.": "Only products without an order, plus the ones already linked, can be selected.",
-  "You already have an order with this number for this supplier.": "You already have an order with this number for this supplier."
+  "You already have an order with this number for this supplier.": "You already have an order with this number for this supplier.",
+  "Gross Weight": "Gross Weight",
+  "Gross Weight per Item": "Gross Weight per Item",
+  "Fine Weight": "Fine Weight",
+  "Total Fine Weight": "Total Fine Weight",
+  "Fine weight: :weight": "Fine weight: :weight"
 }

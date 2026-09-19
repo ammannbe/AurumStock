@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\Currency;
+use App\Enums\WeightUnit;
 use App\Filament\Resources\ProductResource\Pages\CreateProduct;
 use App\Filament\Resources\ProductResource\Pages\ListProducts;
 use App\Models\Depository;
@@ -26,6 +27,40 @@ class ProductViewsTest extends TestCase
 
         $response = $this->get('/app/products/create');
         $response->assertStatus(200);
+    }
+
+    public function test_the_weight_field_shows_a_live_fine_weight_hint(): void
+    {
+        $user = User::factory()->create();
+        Depository::factory()->create(['user_id' => $user->id]);
+
+        $this->actingAs($user);
+        $this->app->setLocale('en');
+
+        Livewire::test(CreateProduct::class)
+            ->fillForm([
+                'weight' => 20,
+                'weight_unit' => WeightUnit::Gram->value,
+                'fineness' => '835',
+            ])
+            ->assertSee('Fine weight: 16.7 g');
+    }
+
+    public function test_the_fine_weight_hint_is_hidden_without_a_fineness(): void
+    {
+        $user = User::factory()->create();
+        Depository::factory()->create(['user_id' => $user->id]);
+
+        $this->actingAs($user);
+        $this->app->setLocale('en');
+
+        Livewire::test(CreateProduct::class)
+            ->fillForm([
+                'weight' => 20,
+                'weight_unit' => WeightUnit::Gram->value,
+                'fineness' => null,
+            ])
+            ->assertDontSee('Fine weight:');
     }
 
     public function test_the_create_form_defaults_to_the_profile_currency(): void

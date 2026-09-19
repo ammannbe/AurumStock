@@ -56,4 +56,64 @@ class ProductTest extends TestCase
         $this->assertEqualsWithDelta(50, $product->getAttribute('price_trend'), 0.001);
         $this->assertEqualsWithDelta(50, ProductStatistics::priceTrend(collect([$product])), 0.001);
     }
+
+    public function test_fine_weight_applies_the_fineness_to_the_gross_weight(): void
+    {
+        $product = Product::factory()->make([
+            'weight' => 20,
+            'weight_unit' => WeightUnit::Gram,
+            'fineness' => '835',
+        ]);
+
+        $this->assertEqualsWithDelta(16.7, $product->fine_weight, 0.0001);
+    }
+
+    public function test_fine_weight_falls_back_to_pure_when_fineness_is_missing(): void
+    {
+        $product = Product::factory()->make([
+            'weight' => 20,
+            'weight_unit' => WeightUnit::Gram,
+            'fineness' => null,
+        ]);
+
+        $this->assertEqualsWithDelta(20.0, $product->fine_weight, 0.0001);
+    }
+
+    public function test_material_value_is_based_on_fine_weight_not_gross_weight(): void
+    {
+        StockPrice::create([
+            'material' => Material::Silver,
+            'price' => 100,
+        ]);
+
+        $product = Product::factory()->create([
+            'material' => Material::Silver,
+            'weight' => 1,
+            'weight_unit' => WeightUnit::TroyOunce,
+            'amount' => 1,
+            'fineness' => '500',
+        ])->load('stockPrice');
+
+        // 1 oz gross at 50% purity = 0.5 oz fine x 100 USD.
+        $this->assertEqualsWithDelta(50.0, $product->material_value, 0.001);
+    }
+
+    public function test_material_value_is_unchanged_for_pure_products(): void
+    {
+        StockPrice::create([
+            'material' => Material::Gold,
+            'price' => 200,
+        ]);
+
+        $product = Product::factory()->create([
+            'material' => Material::Gold,
+            'weight' => 1,
+            'weight_unit' => WeightUnit::TroyOunce,
+            'amount' => 3,
+            'fineness' => '999.9',
+        ])->load('stockPrice');
+
+        $this->assertEqualsWithDelta(199.98, $product->material_value, 0.001);
+        $this->assertEqualsWithDelta(599.94, $product->material_value_total, 0.001);
+    }
 }

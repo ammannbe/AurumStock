@@ -109,7 +109,7 @@ class ProductTemplateResource extends Resource
             Section::make(__('Technical data'))->schema([
                 TextInput::make('size')->label(__('Size'))->nullable()->columnSpan(2),
                 TextInput::make('weight')
-                    ->label(__('Weight per Item'))
+                    ->label(__('Gross Weight per Item'))
                     ->numeric()
                     ->required()
                     ->step(0.0001)
