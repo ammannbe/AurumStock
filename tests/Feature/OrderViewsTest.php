@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Filament\Resources\OrderResource;
+use App\Filament\Resources\OrderResource\Pages\CreateOrder;
 use App\Filament\Resources\OrderResource\Pages\EditOrder;
 use App\Filament\Resources\OrderResource\Pages\ListOrders;
 use App\Filament\Resources\ProductResource\Pages\CreateProduct;
@@ -35,6 +36,168 @@ class OrderViewsTest extends TestCase
     public function test_guests_cannot_access_orders(): void
     {
         $this->get('/app/orders')->assertRedirect();
+    }
+
+    public function test_a_duplicate_order_number_is_rejected_with_a_form_error(): void
+    {
+        $user = User::factory()->create();
+        $supplier = Supplier::factory()->create(['user_id' => $user->id]);
+        Order::factory()->create([
+            'user_id' => $user->id,
+            'supplier_id' => $supplier->id,
+            'order_number' => '25822',
+        ]);
+
+        $this->actingAs($user);
+
+        Livewire::test(CreateOrder::class)
+            ->fillForm([
+                'order_number' => '25822',
+                'supplier_id' => $supplier->id,
+            ])
+            ->call('create')
+            ->assertHasFormErrors(['order_number']);
+
+        $this->assertSame(1, Order::query()->count());
+    }
+
+    public function test_a_concurrent_duplicate_insert_surfaces_as_a_form_error(): void
+    {
+        $user = User::factory()->create();
+        $supplier = Supplier::factory()->create(['user_id' => $user->id]);
+
+        $this->actingAs($user);
+
+        $component = Livewire::test(CreateOrder::class)
+            ->fillForm([
+                'order_number' => '25822',
+                'supplier_id' => $supplier->id,
+            ]);
+
+        // Simulate another request winning the race after form validation passed.
+        Order::factory()->create([
+            'user_id' => $user->id,
+            'supplier_id' => $supplier->id,
+            'order_number' => '25822',
+        ]);
+
+        $component->call('create')->assertHasFormErrors(['order_number']);
+
+        $this->assertSame(1, Order::query()->count());
+    }
+
+    public function test_inline_order_creation_rejects_a_duplicate_order_number(): void
+    {
+        $user = User::factory()->create();
+        Depository::factory()->create(['user_id' => $user->id]);
+        $supplier = Supplier::factory()->create(['user_id' => $user->id]);
+        Order::factory()->create([
+            'user_id' => $user->id,
+            'supplier_id' => $supplier->id,
+            'order_number' => '25822',
+        ]);
+
+        $this->actingAs($user);
+
+        Livewire::test(CreateProduct::class)
+            ->callAction(
+                TestAction::make('createOption')->schemaComponent('order_id'),
+                ['order_number' => '25822', 'supplier_id' => $supplier->id],
+            )
+            ->assertHasActionErrors(['order_number']);
+
+        $this->assertSame(1, Order::query()->count());
+    }
+
+    public function test_the_same_order_number_is_allowed_for_a_different_supplier(): void
+    {
+        $user = User::factory()->create();
+        $supplier = Supplier::factory()->create(['user_id' => $user->id]);
+        $otherSupplier = Supplier::factory()->create(['user_id' => $user->id]);
+        Order::factory()->create([
+            'user_id' => $user->id,
+            'supplier_id' => $supplier->id,
+            'order_number' => '25822',
+        ]);
+
+        $this->actingAs($user);
+
+        Livewire::test(CreateOrder::class)
+            ->fillForm([
+                'order_number' => '25822',
+                'supplier_id' => $otherSupplier->id,
+            ])
+            ->call('create')
+            ->assertHasNoFormErrors();
+
+        $this->assertSame(2, Order::query()->count());
+    }
+
+    public function test_another_user_can_reuse_an_order_number(): void
+    {
+        $owner = User::factory()->create();
+        $other = User::factory()->create();
+        $ownerSupplier = Supplier::factory()->create(['user_id' => $owner->id]);
+        Order::factory()->create([
+            'user_id' => $owner->id,
+            'supplier_id' => $ownerSupplier->id,
+            'order_number' => '25822',
+        ]);
+
+        $otherSupplier = Supplier::factory()->create(['user_id' => $other->id]);
+
+        $this->actingAs($other);
+
+        Livewire::test(CreateOrder::class)
+            ->fillForm([
+                'order_number' => '25822',
+                'supplier_id' => $otherSupplier->id,
+            ])
+            ->call('create')
+            ->assertHasNoFormErrors();
+
+        $this->assertSame(2, Order::query()->count());
+    }
+
+    public function test_inline_order_creation_allows_a_fresh_order_number(): void
+    {
+        $user = User::factory()->create();
+        Depository::factory()->create(['user_id' => $user->id]);
+        $supplier = Supplier::factory()->create(['user_id' => $user->id]);
+        Order::factory()->create([
+            'user_id' => $user->id,
+            'supplier_id' => $supplier->id,
+            'order_number' => '25822',
+        ]);
+
+        $this->actingAs($user);
+
+        Livewire::test(CreateProduct::class)
+            ->callAction(
+                TestAction::make('createOption')->schemaComponent('order_id'),
+                ['order_number' => '25823', 'supplier_id' => $supplier->id],
+            )
+            ->assertHasNoActionErrors();
+
+        $this->assertSame(2, Order::query()->count());
+    }
+
+    public function test_editing_an_order_does_not_collide_with_itself(): void
+    {
+        $user = User::factory()->create();
+        $supplier = Supplier::factory()->create(['user_id' => $user->id]);
+        $order = Order::factory()->create([
+            'user_id' => $user->id,
+            'supplier_id' => $supplier->id,
+            'order_number' => '25822',
+        ]);
+
+        $this->actingAs($user);
+
+        Livewire::test(EditOrder::class, ['record' => $order->getRouteKey()])
+            ->fillForm(['order_date' => '2026-09-11'])
+            ->call('save')
+            ->assertHasNoFormErrors();
     }
 
     public function test_users_only_see_their_own_orders(): void

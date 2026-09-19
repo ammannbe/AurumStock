@@ -23,6 +23,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Component;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -31,6 +32,7 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rules\Unique;
 
 class OrderResource extends Resource
 {
@@ -69,12 +71,30 @@ class OrderResource extends Resource
             TextInput::make('order_number')
                 ->label(__('Order Number'))
                 ->required()
-                ->maxLength(255),
+                ->maxLength(255)
+                // Mirrors the orders_user_id_supplier_id_order_number_unique index.
+                ->unique(
+                    table: Order::class,
+                    ignoreRecord: true,
+                    modifyRuleUsing: function (Unique $rule, Get $get): Unique {
+                        $supplierId = $get('supplier_id');
+
+                        $rule->where('user_id', Auth::id());
+
+                        return filled($supplierId)
+                            ? $rule->where('supplier_id', $supplierId)
+                            : $rule->whereNull('supplier_id');
+                    },
+                )
+                ->validationMessages([
+                    'unique' => __('You already have an order with this number for this supplier.'),
+                ]),
             Select::make('supplier_id')
                 ->label(__('Supplier'))
                 ->options(fn () => SupplierResource::optionsForCurrentUser())
                 ->searchable()
                 ->nullable()
+                ->live()
                 ->createOptionForm(SupplierResource::formFields())
                 ->createOptionUsing(fn (array $data) => Supplier::create([
                     ...$data,

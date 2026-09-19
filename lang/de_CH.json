@@ -228,5 +228,6 @@
   "Palladium Coin": "Palladiummünze",
   "Palladium Ingot": "Palladiumbarren",
   "Link Products": "Produkte verknüpfen",
-  "Only products without an order, plus the ones already linked, can be selected.": "Auswählbar sind Produkte ohne Bestellung sowie die bereits verknüpften."
+  "Only products without an order, plus the ones already linked, can be selected.": "Auswählbar sind Produkte ohne Bestellung sowie die bereits verknüpften.",
+  "You already have an order with this number for this supplier.": "Sie haben bereits eine Bestellung mit dieser Nummer bei diesem Lieferanten."
 }

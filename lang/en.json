@@ -231,5 +231,6 @@
   "Palladium Coin": "Palladium Coin",
   "Palladium Ingot": "Palladium Ingot",
   "Link Products": "Link Products",
-  "Only products without an order, plus the ones already linked, can be selected.": "Only products without an order, plus the ones already linked, can be selected."
+  "Only products without an order, plus the ones already linked, can be selected.": "Only products without an order, plus the ones already linked, can be selected.",
+  "You already have an order with this number for this supplier.": "You already have an order with this number for this supplier."
 }
