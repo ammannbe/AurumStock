@@ -9,6 +9,8 @@ use App\Models\Order;
 use App\Models\Product;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -90,6 +92,75 @@ class ProductReplicateActionTest extends TestCase
         $this->actingAs($user);
 
         $this->get('/app/products/create?duplicate='.$product->getKey())->assertStatus(200);
+    }
+
+    public function test_the_files_are_not_copied_until_the_form_is_actually_saved(): void
+    {
+        Storage::fake('public');
+
+        $user = User::factory()->create();
+        $depository = Depository::factory()->create(['user_id' => $user->id]);
+
+        $frontPath = UploadedFile::fake()->image('front.jpg')->storeAs('products', 'front.jpg', 'public');
+
+        $product = Product::factory()->create([
+            'user_id' => $user->id,
+            'depository_id' => $depository->id,
+            'front_image_path' => $frontPath,
+        ]);
+
+        $this->actingAs($user);
+
+        Livewire::withQueryParams(['duplicate' => $product->getKey()])
+            ->test(CreateProduct::class); // @phpstan-ignore argument.templateType
+
+        $disk = Storage::disk('public');
+        $filesAfterMountingOnly = collect($disk->files('products'))->reject(fn (string $file) => $file === $frontPath);
+
+        $this->assertEmpty($filesAfterMountingOnly, 'No file should be copied just from opening the create form.');
+    }
+
+    public function test_duplicating_and_saving_copies_the_image_files_instead_of_sharing_them(): void
+    {
+        Storage::fake('public');
+
+        $user = User::factory()->create();
+        $depository = Depository::factory()->create(['user_id' => $user->id]);
+
+        $frontPath = UploadedFile::fake()->image('front.jpg')->storeAs('products', 'front.jpg', 'public');
+        $mediaPath = UploadedFile::fake()->image('media.jpg')->storeAs('products/media', 'media.jpg', 'public');
+
+        $product = Product::factory()->create([
+            'user_id' => $user->id,
+            'depository_id' => $depository->id,
+            'front_image_path' => $frontPath,
+            'assets' => [['path' => $mediaPath, 'label' => 'Extra']],
+        ]);
+
+        $this->actingAs($user);
+
+        Livewire::withQueryParams(['duplicate' => $product->getKey()])
+            ->test(CreateProduct::class) // @phpstan-ignore argument.templateType
+            ->call('create')
+            ->assertHasNoFormErrors();
+
+        $this->assertDatabaseCount('products', 2);
+
+        $disk = Storage::disk('public');
+
+        $copiedFiles = collect($disk->files('products'))->reject(fn (string $file) => $file === $frontPath);
+        $this->assertNotEmpty($copiedFiles, 'Expected a copied front image file to exist.');
+
+        $copiedMediaFiles = collect($disk->files('products/media'))->reject(fn (string $file) => $file === $mediaPath);
+        $this->assertNotEmpty($copiedMediaFiles, 'Expected a copied media asset file to exist.');
+
+        // The original files must remain untouched.
+        $this->assertTrue($disk->exists($frontPath));
+        $this->assertTrue($disk->exists($mediaPath));
+
+        $duplicate = Product::query()->whereKeyNot($product->id)->firstOrFail();
+        $this->assertNotSame($product->front_image_path, $duplicate->front_image_path);
+        $this->assertNotSame($product->assets[0]['path'], $duplicate->assets[0]['path']);
     }
 
     public function test_the_create_form_ignores_another_users_product_id(): void
