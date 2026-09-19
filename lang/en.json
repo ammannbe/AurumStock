@@ -220,5 +220,6 @@
   "Preview": "Preview",
   "Receipt": "Receipt",
   "Close": "Close",
-  "Preview not available for this file type.": "Preview not available for this file type."
+  "Preview not available for this file type.": "Preview not available for this file type.",
+  "Duplicate": "Duplicate"
 }

@@ -997,6 +997,12 @@ class ProductResource extends Resource
 
         ])->recordActions([
             EditAction::make()->color('secondary'),
+            Action::make('duplicate')
+                ->label(__('Duplicate'))
+                ->icon('heroicon-o-document-duplicate')
+                ->color('gray')
+                ->visible(fn (Product $record): bool => Auth::user()?->can('view', $record) ?? false)
+                ->url(fn (Product $record): string => static::getUrl('create', ['duplicate' => $record->getKey()])),
             DeleteAction::make(),
         ])->toolbarActions([
             DeleteBulkAction::make(),

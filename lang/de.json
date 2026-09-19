@@ -220,5 +220,6 @@
   "Preview": "Vorschau",
   "Receipt": "Beleg",
   "Close": "Schliessen",
-  "Preview not available for this file type.": "Für diesen Dateityp ist keine Vorschau verfügbar."
+  "Preview not available for this file type.": "Für diesen Dateityp ist keine Vorschau verfügbar.",
+  "Duplicate": "Duplizieren"
 }
