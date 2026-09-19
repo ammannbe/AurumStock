@@ -238,7 +238,18 @@ class OrderResource extends Resource
                 ])),
             TextColumn::make('receipts_count')
                 ->label(__('Receipts'))
-                ->getStateUsing(fn (Order $record) => count($record->receiptEntries())),
+                ->getStateUsing(fn (Order $record) => count($record->receiptEntries()))
+                ->badge()
+                ->color(fn (Order $record): string => $record->receiptEntries() === [] ? 'gray' : 'secondary')
+                ->action(
+                    Action::make('previewReceipts')
+                        ->modalHeading(__('Receipts'))
+                        ->modalContent(fn (Order $record): View => view('filament.orders.receipt-preview', [
+                            'receipts' => $record->previewableReceipts(),
+                        ]))
+                        ->modalSubmitAction(false)
+                        ->modalCancelActionLabel(__('Close')),
+                ),
             TextColumn::make('total_price')
                 ->label(__('Order Total'))
                 ->getStateUsing(fn (Order $record) => static::orderTotalInPreferredCurrency($record))

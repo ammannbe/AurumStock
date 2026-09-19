@@ -576,6 +576,54 @@ class OrderViewsTest extends TestCase
         $this->assertSame('Invoice', $order->previewableReceipts()[0]['label']);
     }
 
+    public function test_the_receipts_column_opens_a_preview_of_every_receipt(): void
+    {
+        Storage::fake('local');
+        Storage::disk('local')->put('receipts/invoice.pdf', '%PDF-1.4 fake');
+        Storage::disk('local')->put('receipts/photo.jpg', 'fake');
+
+        $user = User::factory()->create();
+        $order = Order::factory()->create([
+            'user_id' => $user->id,
+            'receipts' => [
+                ['path' => 'receipts/invoice.pdf', 'label' => 'Invoice'],
+                ['path' => 'receipts/photo.jpg', 'label' => 'Photo'],
+            ],
+        ]);
+
+        $this->actingAs($user);
+
+        /** @var ListOrders $page */
+        $page = Livewire::test(ListOrders::class)
+            ->mountAction(TestAction::make('previewReceipts')->table($order))
+            ->instance();
+
+        $html = (string) $page->getMountedAction()?->getModalContent()?->render();
+
+        $this->assertStringContainsString('Invoice', $html);
+        $this->assertStringContainsString('Photo', $html);
+        $this->assertStringContainsString('type="application/pdf"', $html);
+        $this->assertStringContainsString(route('orders.receipts.show', ['order' => $order->id, 'index' => 0]), $html);
+        $this->assertStringContainsString(route('orders.receipts.show', ['order' => $order->id, 'index' => 1]), $html);
+    }
+
+    public function test_the_receipts_preview_explains_when_there_are_none(): void
+    {
+        $user = User::factory()->create();
+        $order = Order::factory()->create(['user_id' => $user->id, 'receipts' => null]);
+
+        $this->actingAs($user);
+
+        /** @var ListOrders $page */
+        $page = Livewire::test(ListOrders::class)
+            ->mountAction(TestAction::make('previewReceipts')->table($order))
+            ->instance();
+
+        $content = $page->getMountedAction()?->getModalContent();
+
+        $this->assertStringContainsString(__('No receipts on this order yet.'), (string) $content?->render());
+    }
+
     public function test_inline_supplier_creation_stamps_the_current_user(): void
     {
         $user = User::factory()->create();
