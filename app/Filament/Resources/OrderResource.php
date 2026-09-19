@@ -292,15 +292,34 @@ class OrderResource extends Resource
      *
      * @return array<int, string>
      */
-    protected static function linkableProductOptions(Order $order): array
+    public static function linkableProductOptions(Order $order): array
     {
         return Product::query()
             ->where('user_id', Auth::id())
             ->where(fn (Builder $query) => $query->whereNull('order_id')->orWhere('order_id', $order->getKey()))
             ->orderBy('name')
             ->get()
-            ->mapWithKeys(fn (Product $product): array => [$product->getKey() => $product->name])
+            ->mapWithKeys(fn (Product $product): array => [
+                $product->getKey() => static::productOptionLabel($product),
+            ])
             ->all();
+    }
+
+    /**
+     * Product name plus its purchase price, so identically named pieces from
+     * different purchases stay distinguishable.
+     */
+    public static function productOptionLabel(Product $product): string
+    {
+        if ($product->price === null) {
+            return $product->name;
+        }
+
+        $price = number_format((float) $product->price, 2).' '.$product->price_currency;
+
+        return $product->amount > 1
+            ? $product->name.' — '.$product->amount.' × '.$price
+            : $product->name.' — '.$price;
     }
 
     /**

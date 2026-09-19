@@ -6,6 +6,7 @@ use App\Enums\Manufacturer;
 use App\Enums\Material;
 use App\Enums\ProductType;
 use App\Enums\WeightUnit;
+use App\Support\ProductMediaFiles;
 use Database\Factories\ProductTemplateFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -146,6 +147,10 @@ class ProductTemplate extends Model
     {
         static::saving(function (self $template): void {
             $template->source_hash = $template->calculateSourceHash();
+        });
+
+        static::deleted(function (self $template): void {
+            ProductMediaFiles::deleteUnreferenced($template);
         });
     }
 

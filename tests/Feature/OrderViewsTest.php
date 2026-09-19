@@ -266,6 +266,62 @@ class OrderViewsTest extends TestCase
         $this->assertDatabaseHas('products', ['id' => $linked->id, 'order_id' => null]);
     }
 
+    public function test_the_link_products_options_include_the_price(): void
+    {
+        $user = User::factory()->create();
+        $order = Order::factory()->create(['user_id' => $user->id]);
+        $single = Product::factory()->create([
+            'user_id' => $user->id,
+            'order_id' => null,
+            'name' => 'Maple Leaf',
+            'price' => 2150.5,
+            'price_currency' => 'CHF',
+            'amount' => 1,
+        ]);
+        $multiple = Product::factory()->create([
+            'user_id' => $user->id,
+            'order_id' => null,
+            'name' => 'Krugerrand',
+            'price' => 1000,
+            'price_currency' => 'EUR',
+            'amount' => 3,
+        ]);
+
+        $this->actingAs($user);
+
+        $noPrice = Product::factory()->create([
+            'user_id' => $user->id,
+            'order_id' => null,
+            'name' => 'Unpriced',
+            'price' => null,
+        ]);
+
+        $this->assertSame('Maple Leaf — 2,150.50 CHF', OrderResource::productOptionLabel($single));
+        $this->assertSame('Krugerrand — 3 × 1,000.00 EUR', OrderResource::productOptionLabel($multiple));
+        $this->assertSame('Unpriced', OrderResource::productOptionLabel($noPrice));
+
+        $this->assertSame(
+            [$multiple->id, $single->id, $noPrice->id],
+            array_keys(OrderResource::linkableProductOptions($order)),
+        );
+    }
+
+    public function test_the_link_products_modal_has_a_translated_save_button(): void
+    {
+        $user = User::factory()->create();
+        $order = Order::factory()->create(['user_id' => $user->id]);
+
+        $this->actingAs($user);
+        $this->app->setLocale('de');
+
+        /** @var ListOrders $page */
+        $page = Livewire::test(ListOrders::class)
+            ->mountAction(TestAction::make('linkProducts')->table($order))
+            ->instance();
+
+        $this->assertSame('Speichern', $page->getMountedAction()?->getModalSubmitActionLabel());
+    }
+
     public function test_the_products_count_links_to_the_filtered_product_list(): void
     {
         $user = User::factory()->create();

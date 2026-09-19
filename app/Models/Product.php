@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\Material;
 use App\Enums\ProductType;
 use App\Enums\WeightUnit;
+use App\Support\ProductMediaFiles;
 use Database\Factories\ProductFactory;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -85,6 +86,10 @@ class Product extends Model
             if ($product->isDirty('template_id')) {
                 $product->source_hash = $product->template?->source_hash;
             }
+        });
+
+        static::deleted(function (self $product): void {
+            ProductMediaFiles::deleteUnreferenced($product);
         });
     }
 

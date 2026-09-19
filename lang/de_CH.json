@@ -234,5 +234,6 @@
   "Gross Weight per Item": "Bruttogewicht pro Stück",
   "Fine Weight": "Feingewicht",
   "Total Fine Weight": "Gesamtfeingewicht",
-  "Fine weight: :weight": "Feingewicht: :weight"
+  "Fine weight: :weight": "Feingewicht: :weight",
+  "Save": "Speichern"
 }
