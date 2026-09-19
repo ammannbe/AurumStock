@@ -229,5 +229,7 @@
   "Platinum Coin": "Platinmünze",
   "Platinum Ingot": "Platinbarren",
   "Palladium Coin": "Palladiummünze",
-  "Palladium Ingot": "Palladiumbarren"
+  "Palladium Ingot": "Palladiumbarren",
+  "Link Products": "Produkte verknüpfen",
+  "Only products without an order, plus the ones already linked, can be selected.": "Auswählbar sind Produkte ohne Bestellung sowie die bereits verknüpften."
 }

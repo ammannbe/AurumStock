@@ -4,12 +4,15 @@ namespace Tests\Feature;
 
 use App\Filament\Resources\OrderResource;
 use App\Filament\Resources\OrderResource\Pages\EditOrder;
+use App\Filament\Resources\OrderResource\Pages\ListOrders;
 use App\Filament\Resources\ProductResource\Pages\CreateProduct;
+use App\Filament\Resources\ProductResource\Pages\ListProducts;
 use App\Models\Depository;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\User;
+use Filament\Actions\Testing\TestAction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -81,6 +84,63 @@ class OrderViewsTest extends TestCase
 
         $this->assertSame($firstOrder->receiptEntries(), $secondOrder->receiptEntries());
         $this->assertSame('Invoice', $firstOrder->receiptEntries()[0]['label']);
+    }
+
+    public function test_linking_products_assigns_and_unassigns_them(): void
+    {
+        $user = User::factory()->create();
+        $order = Order::factory()->create(['user_id' => $user->id]);
+        $linked = Product::factory()->create(['user_id' => $user->id, 'order_id' => $order->id]);
+        $free = Product::factory()->create(['user_id' => $user->id, 'order_id' => null]);
+
+        $this->actingAs($user);
+
+        Livewire::test(ListOrders::class)
+            ->callAction(TestAction::make('linkProducts')->table($order), ['product_ids' => [$free->id]])
+            ->assertHasNoActionErrors();
+
+        $this->assertDatabaseHas('products', ['id' => $free->id, 'order_id' => $order->id]);
+        $this->assertDatabaseHas('products', ['id' => $linked->id, 'order_id' => null]);
+    }
+
+    public function test_the_products_count_links_to_the_filtered_product_list(): void
+    {
+        $user = User::factory()->create();
+        $order = Order::factory()->create(['user_id' => $user->id]);
+        $inOrder = Product::factory()->create(['user_id' => $user->id, 'order_id' => $order->id]);
+        $notInOrder = Product::factory()->create(['user_id' => $user->id, 'order_id' => null]);
+
+        $this->actingAs($user);
+
+        /** @var ListOrders $listOrders */
+        $listOrders = Livewire::test(ListOrders::class)->instance();
+
+        $url = $listOrders->getTable()->getColumn('products_count')->record($order)->getUrl();
+
+        $query = [];
+        parse_str((string) parse_url((string) $url, PHP_URL_QUERY), $query);
+
+        // The link is only useful if the list page actually binds these params.
+        Livewire::withQueryParams($query)
+            // @phpstan-ignore argument.templateType
+            ->test(ListProducts::class)
+            ->assertCanSeeTableRecords([$inOrder])
+            ->assertCanNotSeeTableRecords([$notInOrder]);
+    }
+
+    public function test_linking_products_cannot_steal_another_users_product(): void
+    {
+        $user = User::factory()->create();
+        $other = User::factory()->create();
+        $order = Order::factory()->create(['user_id' => $user->id]);
+        $foreign = Product::factory()->create(['user_id' => $other->id, 'order_id' => null]);
+
+        $this->actingAs($user);
+
+        Livewire::test(ListOrders::class)
+            ->callAction(TestAction::make('linkProducts')->table($order), ['product_ids' => [$foreign->id]]);
+
+        $this->assertDatabaseHas('products', ['id' => $foreign->id, 'order_id' => null]);
     }
 
     public function test_deleting_an_order_keeps_its_products(): void

@@ -61,6 +61,22 @@ class ProductMediaGalleryTest extends TestCase
         $this->assertSame(__('Video'), $items[3]['label']);
     }
 
+    public function test_it_prefers_the_inscription_texts_as_labels(): void
+    {
+        $product = $this->product([
+            'front_image_path' => 'products/front.jpg',
+            'back_image_path' => 'products/back.jpg',
+            'text_front' => 'Helvetia',
+            'text_back' => null,
+            'assets' => null,
+        ]);
+
+        $items = ProductMediaGallery::for($product);
+
+        $this->assertSame('Helvetia', $items[0]['label']);
+        $this->assertSame(__('Back (value side)'), $items[1]['label']);
+    }
+
     public function test_it_skips_malformed_assets(): void
     {
         $product = $this->product([

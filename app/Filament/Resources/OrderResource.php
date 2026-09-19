@@ -208,7 +208,14 @@ class OrderResource extends Resource
             TextColumn::make('order_number')->label(__('Order Number'))->searchable()->sortable(),
             TextColumn::make('supplier.name')->label(__('Supplier'))->searchable()->sortable(),
             TextColumn::make('order_date')->label(__('Order Date'))->date()->sortable(),
-            TextColumn::make('products_count')->label(__('Products'))->sortable(),
+            TextColumn::make('products_count')
+                ->label(__('Products'))
+                ->sortable()
+                ->badge()
+                ->color('secondary')
+                ->url(fn (Order $record): string => ProductResource::getUrl('index', [
+                    'filters' => ['order_id' => ['value' => $record->getKey()]],
+                ])),
             TextColumn::make('receipts_count')
                 ->label(__('Receipts'))
                 ->getStateUsing(fn (Order $record) => count($record->receiptEntries())),
@@ -221,11 +228,65 @@ class OrderResource extends Resource
                 ->label(__('Supplier'))
                 ->options(fn () => SupplierResource::optionsForCurrentUser()),
         ])->recordActions([
+            Action::make('linkProducts')
+                ->label(__('Link Products'))
+                ->icon('heroicon-o-link')
+                ->color('gray')
+                ->modalHeading(__('Link Products'))
+                ->modalSubmitActionLabel(__('Save'))
+                ->fillForm(fn (Order $record): array => [
+                    'product_ids' => $record->products()->pluck('id')->all(),
+                ])
+                ->schema(fn (Order $record): array => [
+                    Select::make('product_ids')
+                        ->label(__('Products'))
+                        ->multiple()
+                        ->searchable()
+                        ->options(fn (): array => static::linkableProductOptions($record))
+                        ->helperText(__('Only products without an order, plus the ones already linked, can be selected.')),
+                ])
+                ->action(function (Order $record, array $data): void {
+                    static::syncProducts($record, $data['product_ids'] ?? []);
+                }),
             EditAction::make()->color('secondary'),
             DeleteAction::make(),
         ])->toolbarActions([
             DeleteBulkAction::make(),
         ])->defaultSort('order_date', 'desc');
+    }
+
+    /**
+     * Products of the current user that are either unassigned or already
+     * linked to this order.
+     *
+     * @return array<int, string>
+     */
+    protected static function linkableProductOptions(Order $order): array
+    {
+        return Product::query()
+            ->where('user_id', Auth::id())
+            ->where(fn (Builder $query) => $query->whereNull('order_id')->orWhere('order_id', $order->getKey()))
+            ->orderBy('name')
+            ->get()
+            ->mapWithKeys(fn (Product $product): array => [$product->getKey() => $product->name])
+            ->all();
+    }
+
+    /**
+     * @param  array<int, mixed>  $productIds
+     */
+    protected static function syncProducts(Order $order, array $productIds): void
+    {
+        $ids = array_map('intval', $productIds);
+
+        $order->products()->whereNotIn('id', $ids ?: [0])->update(['order_id' => null]);
+
+        if ($ids !== []) {
+            Product::query()
+                ->where('user_id', Auth::id())
+                ->whereIn('id', $ids)
+                ->update(['order_id' => $order->getKey()]);
+        }
     }
 
     /**

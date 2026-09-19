@@ -23,7 +23,7 @@ class ProductMediaGallery
             $items[] = [
                 'url' => Storage::disk('public')->url($record->front_image_path),
                 'type' => 'image',
-                'label' => __('Front (image side)'),
+                'label' => self::label($record->text_front, __('Front (image side)')),
             ];
         }
 
@@ -31,7 +31,7 @@ class ProductMediaGallery
             $items[] = [
                 'url' => Storage::disk('public')->url($record->back_image_path),
                 'type' => 'image',
-                'label' => __('Back (value side)'),
+                'label' => self::label($record->text_back, __('Back (value side)')),
             ];
         }
 
@@ -53,6 +53,11 @@ class ProductMediaGallery
         }
 
         return $items;
+    }
+
+    private static function label(mixed $text, string $fallback): string
+    {
+        return is_string($text) && filled($text) ? $text : $fallback;
     }
 
     /**

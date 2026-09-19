@@ -111,6 +111,7 @@
 }
 
 /* The unicode-range above limits the fallback to Mongolian, so other scripts keep the UI font. */
-.aurum-inscription {
+.aurum-inscription,
+.product-slider-counter {
     font-family: 'Noto Sans Mongolian', var(--font-family), ui-sans-serif, system-ui, sans-serif;
 }
