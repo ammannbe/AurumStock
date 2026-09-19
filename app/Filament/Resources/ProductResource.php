@@ -236,7 +236,9 @@ class ProductResource extends Resource
                 Hidden::make('user_id')->default(fn () => Auth::id()),
                 Select::make('template_id')
                     ->label(__('Vorlage aus Datenbank'))
-                    ->options(fn () => ProductTemplate::query()->orderBy('name')->pluck('name', 'id')->all())
+                    ->options(fn () => ProductTemplate::query()->orderBy('name')->get()->mapWithKeys(
+                        fn (ProductTemplate $template): array => [$template->id => $template->displayName()]
+                    )->all())
                     ->searchable()
                     ->nullable()
                     ->live()

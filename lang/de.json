@@ -221,5 +221,13 @@
   "Receipt": "Beleg",
   "Close": "Schliessen",
   "Preview not available for this file type.": "Für diesen Dateityp ist keine Vorschau verfügbar.",
-  "Duplicate": "Duplizieren"
+  "Duplicate": "Duplizieren",
+  "Gold Coin": "Goldmünze",
+  "Gold Ingot": "Goldbarren",
+  "Silver Coin": "Silbermünze",
+  "Silver Ingot": "Silberbarren",
+  "Platinum Coin": "Platinmünze",
+  "Platinum Ingot": "Platinbarren",
+  "Palladium Coin": "Palladiummünze",
+  "Palladium Ingot": "Palladiumbarren"
 }

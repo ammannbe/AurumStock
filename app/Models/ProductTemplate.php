@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\Manufacturer;
 use App\Enums\Material;
 use App\Enums\ProductType;
 use App\Enums\WeightUnit;
@@ -93,6 +94,52 @@ class ProductTemplate extends Model
     public static function fieldLabel(string $field): string
     {
         return __(self::FIELD_LABELS[$field] ?? Str::headline($field));
+    }
+
+    /**
+     * Human-readable label shown in the product "template" select, generated from
+     * the template's own values rather than the (often ambiguous) stored name:
+     * coins: "Goldmünze <name> <year>", ingots: "Goldbarren 10 Gramm 999.9 (Metalor)".
+     */
+    public function displayName(): string
+    {
+        $manufacturer = $this->manufacturer
+            ? (Manufacturer::tryFrom($this->manufacturer)?->label() ?? $this->manufacturer)
+            : null;
+
+        if ($this->type === ProductType::Ingot) {
+            $weight = rtrim(rtrim(number_format((float) $this->weight, 4, '.', ''), '0'), '.');
+            $unit = $this->weight_unit?->label() ?? '';
+
+            $label = implode(' ', array_filter([
+                $this->materialTypeLabel(),
+                trim("{$weight} {$unit}"),
+                $this->fineness,
+            ]));
+
+            return $manufacturer ? "{$label} ({$manufacturer})" : $label;
+        }
+
+        return implode(' ', array_filter([
+            $this->materialTypeLabel(),
+            $this->name,
+            $this->year,
+        ]));
+    }
+
+    private function materialTypeLabel(): string
+    {
+        return match ([$this->material, $this->type]) {
+            [Material::Gold, ProductType::Coin] => __('Gold Coin'),
+            [Material::Gold, ProductType::Ingot] => __('Gold Ingot'),
+            [Material::Silver, ProductType::Coin] => __('Silver Coin'),
+            [Material::Silver, ProductType::Ingot] => __('Silver Ingot'),
+            [Material::Platinum, ProductType::Coin] => __('Platinum Coin'),
+            [Material::Platinum, ProductType::Ingot] => __('Platinum Ingot'),
+            [Material::Palladium, ProductType::Coin] => __('Palladium Coin'),
+            [Material::Palladium, ProductType::Ingot] => __('Palladium Ingot'),
+            default => trim(($this->material?->label() ?? '').' '.($this->type?->label() ?? '')),
+        };
     }
 
     protected static function booted(): void

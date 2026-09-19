@@ -221,5 +221,13 @@
   "Receipt": "Receipt",
   "Close": "Close",
   "Preview not available for this file type.": "Preview not available for this file type.",
-  "Duplicate": "Duplicate"
+  "Duplicate": "Duplicate",
+  "Gold Coin": "Gold Coin",
+  "Gold Ingot": "Gold Ingot",
+  "Silver Coin": "Silver Coin",
+  "Silver Ingot": "Silver Ingot",
+  "Platinum Coin": "Platinum Coin",
+  "Platinum Ingot": "Platinum Ingot",
+  "Palladium Coin": "Palladium Coin",
+  "Palladium Ingot": "Palladium Ingot"
 }
