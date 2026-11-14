@@ -19,7 +19,7 @@ enum McpPermission: string
             McpPermission::Read => __('Read orders, products, suppliers and depositories'),
             McpPermission::Create => __('Create orders, products and suppliers'),
             McpPermission::Receipts => __('Attach receipts to orders'),
-            McpPermission::Images => __('Add missing images to products'),
+            McpPermission::Images => __('Add images, videos and missing inscriptions to products'),
         };
     }
 

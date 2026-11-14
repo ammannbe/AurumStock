@@ -3,7 +3,7 @@
 namespace App\Mcp\Tools;
 
 use App\Mcp\McpPermission;
-use App\Mcp\Support\RemoteFileFetcher;
+use App\Mcp\Support\MediaInput;
 use App\Models\Product;
 use App\Support\ProductMediaFiles;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
@@ -23,20 +23,6 @@ class SetProductImageTool extends AurumTool
 {
     public const MAX_BYTES = 10 * 1024 * 1024;
 
-    /** @var array<int, string> */
-    public const EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'avif', 'heic'];
-
-    /** @var array<string, string> */
-    public const MIME_EXTENSIONS = [
-        'image/jpeg' => 'jpg',
-        'image/png' => 'png',
-        'image/webp' => 'webp',
-        'image/gif' => 'gif',
-        'image/avif' => 'avif',
-        'image/heic' => 'heic',
-        'image/heif' => 'heic',
-    ];
-
     /** @var array<string, string> */
     public const SIDES = [
         'front' => 'front_image_path',
@@ -55,14 +41,10 @@ class SetProductImageTool extends AurumTool
         $data = $request->validate([
             'product_id' => ['required', 'integer'],
             'side' => ['required', 'string', Rule::in(array_keys(self::SIDES))],
-            'image_url' => ['required_without:content_base64', 'prohibits:content_base64', 'nullable', 'string', 'max:2048'],
-            'content_base64' => ['required_without:image_url', 'nullable', 'string', 'max:'.((int) ceil(self::MAX_BYTES / 3) * 4 + 100)],
-            'filename' => ['required_with:content_base64', 'nullable', 'string', 'max:255'],
+            ...MediaInput::rules('image_url'),
         ], [
-            'image_url.required_without' => 'Pass either image_url or content_base64.',
-            'image_url.prohibits' => 'Pass either image_url or content_base64, not both.',
+            ...MediaInput::messages('image_url'),
             'side.in' => 'side must be "front" (image side) or "back" (value side).',
-            'content_base64.max' => 'The file must not be larger than 10 MB.',
         ]);
 
         $product = Product::query()->find($data['product_id']);
@@ -79,35 +61,10 @@ class SetProductImageTool extends AurumTool
             ]);
         }
 
-        if (filled($data['image_url'] ?? null)) {
-            $bytes = app(RemoteFileFetcher::class)->fetch($data['image_url'], self::MAX_BYTES);
-        } else {
-            $filename = basename(str_replace('\\', '/', (string) $data['filename']));
-            $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
-
-            if (! in_array($extension, self::EXTENSIONS, true)) {
-                throw ValidationException::withMessages([
-                    'filename' => 'Only these file types are allowed: '.implode(', ', self::EXTENSIONS).'.',
-                ]);
-            }
-
-            $bytes = $this->decodeBase64((string) $data['content_base64']);
-
-            if (strlen($bytes) > self::MAX_BYTES) {
-                throw ValidationException::withMessages(['content_base64' => 'The file must not be larger than 10 MB.']);
-            }
-        }
-
-        $mime = (new \finfo(FILEINFO_MIME_TYPE))->buffer($bytes) ?: 'application/octet-stream';
-
-        if (! array_key_exists($mime, self::MIME_EXTENSIONS)) {
-            throw ValidationException::withMessages([
-                filled($data['image_url'] ?? null) ? 'image_url' : 'content_base64' => "The file content ({$mime}) is not a supported image.",
-            ]);
-        }
-
-        // The extension follows the actual content, never the client's file name or URL.
-        $path = 'products/'.Str::random(40).'.'.self::MIME_EXTENSIONS[$mime];
+        $file = MediaInput::load($data, 'image_url', MediaInput::IMAGE_EXTENSIONS, self::MAX_BYTES);
+        $bytes = $file['bytes'];
+        $mime = $file['mime'];
+        $path = 'products/'.Str::random(40).'.'.$file['extension'];
 
         Storage::disk(ProductMediaFiles::DISK)->put($path, $bytes);
 

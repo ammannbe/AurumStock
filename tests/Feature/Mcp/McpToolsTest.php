@@ -6,6 +6,7 @@ use App\Enums\WeightUnit;
 use App\Mcp\McpPermission;
 use App\Mcp\Servers\AurumServer;
 use App\Mcp\Support\RemoteFileFetcher;
+use App\Mcp\Tools\AddProductMediaTool;
 use App\Mcp\Tools\AttachOrderReceiptTool;
 use App\Mcp\Tools\CreateOrderTool;
 use App\Mcp\Tools\CreateProductTool;
@@ -17,6 +18,7 @@ use App\Mcp\Tools\ListSuppliersTool;
 use App\Mcp\Tools\SearchProductsTool;
 use App\Mcp\Tools\SearchProductTemplatesTool;
 use App\Mcp\Tools\SetProductImageTool;
+use App\Mcp\Tools\SetProductTextsTool;
 use App\Models\Depository;
 use App\Models\Order;
 use App\Models\Product;
@@ -498,4 +500,110 @@ it('rejects downloads that are no image, too large or failed', function () {
 
     expect($product->refresh()->front_image_path)->toBeNull()
         ->and(Storage::disk('public')->allFiles())->toBe([]);
+});
+
+function mp4Bytes(): string
+{
+    // Minimal ISO base media header (ftyp isom), detected as video/mp4.
+    return "\x00\x00\x00\x20ftypisom\x00\x00\x02\x00isomiso2avc1mp41".str_repeat("\x00", 64);
+}
+
+it('appends images and videos to the additional media of an own product', function () {
+    Storage::fake('public');
+    fakeDns(['cdn.example.com' => ['93.184.216.34']]);
+    Http::preventStrayRequests();
+    Http::fake(['https://cdn.example.com/coin.mp4' => Http::response(mp4Bytes(), 200, ['Content-Type' => 'video/mp4'])]);
+    $product = Product::factory()->create([
+        'user_id' => $this->user->id, 'depository_id' => $this->depository->id,
+        'assets' => [['path' => 'products/media/old.jpg', 'label' => 'Alt']],
+    ]);
+
+    AurumServer::tool(AddProductMediaTool::class, [
+        'product_id' => $product->id, 'media_url' => 'https://cdn.example.com/coin.mp4', 'label' => 'Video',
+    ])->assertOk()->assertStructuredContentPath('added.kind', 'video')->assertStructuredContentCount(2, 'media');
+
+    AurumServer::tool(AddProductMediaTool::class, [
+        'product_id' => $product->id, 'filename' => 'rand.png', 'content_base64' => base64_encode(pngBytes()),
+    ])->assertOk()->assertStructuredContentPath('added.kind', 'image');
+
+    $assets = $product->refresh()->assets;
+    expect($assets)->toHaveCount(3)
+        ->and($assets[0])->toBe(['path' => 'products/media/old.jpg', 'label' => 'Alt'])
+        ->and($assets[1]['label'])->toBe('Video')
+        ->and($assets[1]['path'])->toStartWith('products/media/')->toEndWith('.mp4')
+        ->and($assets[2]['label'])->toBeNull()
+        ->and($assets[2]['path'])->toEndWith('.png');
+
+    Storage::disk('public')->assertExists([$assets[1]['path'], $assets[2]['path']]);
+});
+
+it('skips media that is already attached to the product', function () {
+    Storage::fake('public');
+    Storage::disk('public')->put('products/front.png', pngBytes());
+    $product = Product::factory()->create(['user_id' => $this->user->id, 'depository_id' => $this->depository->id, 'front_image_path' => 'products/front.png', 'assets' => null]);
+
+    AurumServer::tool(AddProductMediaTool::class, [
+        'product_id' => $product->id, 'filename' => 'again.png', 'content_base64' => base64_encode(pngBytes()),
+    ])->assertOk()->assertStructuredContentPath('skipped', true);
+
+    expect($product->refresh()->assets)->toBeNull()
+        ->and(Storage::disk('public')->allFiles())->toBe(['products/front.png']);
+});
+
+it('rejects invalid media and foreign products', function () {
+    Storage::fake('public');
+    $product = Product::factory()->create(['user_id' => $this->user->id, 'depository_id' => $this->depository->id, 'assets' => null]);
+    $foreign = Product::factory()->create(['user_id' => $this->other->id, 'depository_id' => $this->otherDepository->id, 'assets' => null]);
+
+    AurumServer::tool(AddProductMediaTool::class, [
+        'product_id' => $foreign->id, 'filename' => 'a.png', 'content_base64' => base64_encode(pngBytes()),
+    ])->assertHasErrors(["Product #{$foreign->id} not found."]);
+
+    AurumServer::tool(AddProductMediaTool::class, [
+        'product_id' => $product->id, 'filename' => 'doc.pdf', 'content_base64' => base64_encode('%PDF-1.4'),
+    ])->assertHasErrors(['Only these file types are allowed']);
+
+    AurumServer::tool(AddProductMediaTool::class, [
+        'product_id' => $product->id, 'filename' => 'fake.mp4', 'content_base64' => base64_encode('%PDF-1.4 not a video'),
+    ])->assertHasErrors(['is not a supported image or video']);
+
+    AurumServer::tool(AddProductMediaTool::class, [
+        'product_id' => $product->id, 'media_url' => 'http://cdn.example.com/a.mp4',
+    ])->assertHasErrors(['Only public https:// URLs']);
+
+    expect($product->refresh()->assets)->toBeNull()
+        ->and($foreign->refresh()->assets)->toBeNull()
+        ->and(Storage::disk('public')->allFiles())->toBe([]);
+});
+
+it('sets empty product inscriptions but never changes existing ones', function () {
+    $product = Product::factory()->create(['user_id' => $this->user->id, 'depository_id' => $this->depository->id, 'text_front' => null, 'text_back' => 'CHARLES III · 50 PENCE']);
+
+    AurumServer::tool(SetProductTextsTool::class, [
+        'product_id' => $product->id, 'text_front' => ' BRITANNIA 2024 · 1/4 oz · 999 FINE SILVER ', 'text_back' => 'CHARLES III · 50 PENCE',
+    ])->assertOk()->assertStructuredContentPath('set', ['text_front'])->assertStructuredContentPath('unchanged', ['text_back']);
+
+    AurumServer::tool(SetProductTextsTool::class, [
+        'product_id' => $product->id, 'text_back' => 'Something else',
+    ])->assertHasErrors(['already has a back (value side) text']);
+
+    AurumServer::tool(SetProductTextsTool::class, ['product_id' => $product->id])->assertHasErrors(['Pass text_front and/or text_back.']);
+
+    $product->refresh();
+    expect($product->text_front)->toBe('BRITANNIA 2024 · 1/4 oz · 999 FINE SILVER')
+        ->and($product->text_back)->toBe('CHARLES III · 50 PENCE');
+});
+
+it('needs the images permission for media and inscriptions', function () {
+    Storage::fake('public');
+    $product = Product::factory()->create(['user_id' => $this->user->id, 'depository_id' => $this->depository->id, 'text_front' => null, 'assets' => null]);
+    mcpConnect($this->user, [McpPermission::Read, McpPermission::Create, McpPermission::Receipts]);
+
+    AurumServer::tool(SetProductTextsTool::class, ['product_id' => $product->id, 'text_front' => 'X'])->assertHasErrors();
+    AurumServer::tool(AddProductMediaTool::class, [
+        'product_id' => $product->id, 'filename' => 'a.png', 'content_base64' => base64_encode(pngBytes()),
+    ])->assertHasErrors();
+
+    expect($product->refresh()->text_front)->toBeNull()
+        ->and($product->assets)->toBeNull();
 });

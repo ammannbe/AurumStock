@@ -3,6 +3,7 @@
 namespace App\Mcp\Tools;
 
 use App\Mcp\McpPermission;
+use App\Mcp\Support\MediaInput;
 use App\Models\McpGrant;
 use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -68,17 +69,7 @@ abstract class AurumTool extends Tool
      */
     protected function decodeBase64(string $content): string
     {
-        if (str_starts_with($content, 'data:') && str_contains($content, ',')) {
-            $content = substr($content, strpos($content, ',') + 1);
-        }
-
-        $bytes = base64_decode(preg_replace('/\s+/', '', $content) ?? '', true);
-
-        if ($bytes === false || $bytes === '') {
-            throw ValidationException::withMessages(['content_base64' => 'The file content is not valid base64.']);
-        }
-
-        return $bytes;
+        return MediaInput::decodeBase64($content);
     }
 
     /**

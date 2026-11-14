@@ -2,6 +2,7 @@
 
 namespace App\Mcp\Servers;
 
+use App\Mcp\Tools\AddProductMediaTool;
 use App\Mcp\Tools\AttachOrderReceiptTool;
 use App\Mcp\Tools\CreateOrderTool;
 use App\Mcp\Tools\CreateProductTool;
@@ -13,6 +14,7 @@ use App\Mcp\Tools\ListSuppliersTool;
 use App\Mcp\Tools\SearchProductsTool;
 use App\Mcp\Tools\SearchProductTemplatesTool;
 use App\Mcp\Tools\SetProductImageTool;
+use App\Mcp\Tools\SetProductTextsTool;
 use Illuminate\Support\Facades\App;
 use Laravel\Mcp\Server;
 use Laravel\Mcp\Server\Attributes\Instructions;
@@ -42,6 +44,11 @@ use Laravel\Mcp\Transport\JsonRpcResponse;
     Product images: set-product-image adds the front (image side) or back (value side) image of a product.
     Prefer image_url (public https URL, downloaded by the server) over content_base64. It only fills an empty
     side (see has_front_image / has_back_image); existing images are kept.
+    add-product-media appends further images or videos (e.g. edge, packaging, certificate, video) to the
+    additional media, with an optional label; prefer media_url. set-product-texts sets the inscriptions
+    (text_front = image side, text_back = value side, parts separated by " · ") when they are empty.
+    Dealer pages (e.g. CIT) often list several images and videos: use front/back for the two coin sides
+    and add-product-media for the rest. Never replace or remove existing media or texts.
 
     Conventions:
     - price is the total price of a line (all pieces), price_currency USD, CHF or EUR (default: user preference).
@@ -63,6 +70,8 @@ class AurumServer extends Server
         CreateProductTool::class,
         AttachOrderReceiptTool::class,
         SetProductImageTool::class,
+        AddProductMediaTool::class,
+        SetProductTextsTool::class,
     ];
 
     protected array $resources = [];
