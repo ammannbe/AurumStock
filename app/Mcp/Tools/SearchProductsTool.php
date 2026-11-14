@@ -4,6 +4,7 @@ namespace App\Mcp\Tools;
 
 use App\Enums\Material;
 use App\Enums\ProductType;
+use App\Mcp\McpPermission;
 use App\Mcp\Support\Present;
 use App\Mcp\Support\ProductInput;
 use App\Models\Product;
@@ -21,6 +22,11 @@ use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 #[IsReadOnly]
 class SearchProductsTool extends AurumTool
 {
+    protected function permission(): McpPermission
+    {
+        return McpPermission::Read;
+    }
+
     public function handle(Request $request): ResponseFactory
     {
         $user = $this->user($request);

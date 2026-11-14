@@ -156,47 +156,27 @@ Scheduler cron entry:
 AurumStock exposes an [MCP](https://modelcontextprotocol.io/) server for importing orders and products with an AI client (e.g. from a receipt PDF).
 
 - Endpoint: `https://<host>/mcp/aurum` (Streamable HTTP, rate limited to 60 requests per minute)
-- Auth: personal token per user, sent as `Authorization: Bearer <token>`. Only the token hash is stored.
+- Auth: OAuth 2 with [Laravel Passport](https://laravel.com/docs/passport). AI clients register themselves (dynamic client registration), the user signs in and ticks the permissions on the approval screen. Permissions are stored per client in `mcp_grants` and can be changed or revoked in the app under **Connected AI clients**, which also shows how to connect each client.
+- Permissions: `read` (orders, products, suppliers, depositories), `create` (orders, products, suppliers), `receipts` (attach receipts). Tools without permission are neither listed nor callable.
 
-Create (or rotate) and revoke a token:
-
-```bash
-ddev artisan app:mcp-token user@example.com
-ddev artisan app:mcp-token user@example.com --revoke
-```
-
-Example client configuration (Claude Code):
+Example (Claude Code):
 
 ```bash
-claude mcp add --transport http aurumstock https://<host>/mcp/aurum --header "Authorization: Bearer <token>"
+claude mcp add --transport http aurumstock https://<host>/mcp/aurum
+# then run /mcp in Claude Code and choose "Authenticate"
 ```
 
-Generic MCP client (`mcp.json`):
+Tools (all scoped to the signed-in user):
 
-```json
-{
-    "mcpServers": {
-        "aurumstock": {
-            "type": "http",
-            "url": "https://<host>/mcp/aurum",
-            "headers": { "Authorization": "Bearer <token>" }
-        }
-    }
-}
-```
+| Tool | Permission | Purpose |
+|---|---|---|
+| `list-suppliers`, `list-depositories`, `search-product-templates`, `search-products`, `list-orders`, `get-order` | read | Look up data (e.g. duplicate check, templates for line items) |
+| `create-supplier` | create | Find or create a supplier |
+| `create-order` | create | Order with supplier and product line items, atomic, supports `dry_run` |
+| `create-product` | create | Single product, optionally linked to an order, supports `dry_run` |
+| `attach-order-receipt` | receipts | Attach a PDF/image receipt (base64, max 10 MB) to an order |
 
-Tools (all scoped to the token's user):
-
-| Tool | Purpose |
-|---|---|
-| `list-suppliers`, `create-supplier` | Find or create suppliers |
-| `list-depositories` | Depositories for `depository_id` |
-| `search-product-templates` | Match line items to product templates |
-| `search-products` | Search existing products |
-| `list-orders`, `get-order` | Find orders (e.g. duplicate check) and their products |
-| `create-order` | Order with supplier and product line items, atomic, supports `dry_run` |
-| `create-product` | Single product, optionally linked to an order, supports `dry_run` |
-| `attach-order-receipt` | Attach a PDF/image receipt (base64, max 10 MB) to an order |
+Deployment: after `php artisan migrate --force`, create the OAuth keys once with `php artisan passport:keys` (stored in `storage/oauth-*.key`, git-ignored, must persist across deployments) or set `PASSPORT_PRIVATE_KEY` / `PASSPORT_PUBLIC_KEY` in the environment.
 
 ## Translations
 
@@ -234,6 +214,7 @@ ddev composer phpstan
 
 - Laravel 13
 - Filament 5
+- Laravel Passport + Laravel MCP
 - Livewire 4
 - DDEV
 - MariaDB

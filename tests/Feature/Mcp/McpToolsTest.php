@@ -3,6 +3,7 @@
 use App\Enums\Material;
 use App\Enums\ProductType;
 use App\Enums\WeightUnit;
+use App\Mcp\McpPermission;
 use App\Mcp\Servers\AurumServer;
 use App\Mcp\Tools\AttachOrderReceiptTool;
 use App\Mcp\Tools\CreateOrderTool;
@@ -28,6 +29,8 @@ beforeEach(function () {
 
     $this->other = User::factory()->create();
     $this->otherDepository = Depository::factory()->create(['user_id' => $this->other->id]);
+
+    mcpConnect($this->user);
 });
 
 function pngBytes(): string
@@ -36,7 +39,23 @@ function pngBytes(): string
 }
 
 it('does not let guests use tools', function () {
-    AurumServer::tool(ListOrdersTool::class)->assertHasErrors(['Unauthenticated.']);
+    app('auth')->forgetGuards();
+
+    AurumServer::tool(ListOrdersTool::class)->assertHasErrors();
+});
+
+it('only offers and runs the tools the client was given permission for', function () {
+    $order = Order::factory()->create(['user_id' => $this->user->id]);
+    mcpConnect($this->user, [McpPermission::Read]);
+
+    AurumServer::tool(ListOrdersTool::class)->assertOk();
+    AurumServer::tool(CreateOrderTool::class, ['order_number' => 'X-9'])->assertHasErrors();
+    AurumServer::tool(AttachOrderReceiptTool::class, [
+        'order_id' => $order->id, 'filename' => 'a.png', 'content_base64' => base64_encode(pngBytes()),
+    ])->assertHasErrors();
+
+    expect(Order::query()->where('order_number', 'X-9')->exists())->toBeFalse()
+        ->and($order->refresh()->receipts)->toBeEmpty();
 });
 
 it('lists and searches only the user\'s suppliers', function () {
@@ -44,7 +63,7 @@ it('lists and searches only the user\'s suppliers', function () {
     Supplier::factory()->create(['user_id' => $this->user->id, 'name' => 'Philoro']);
     Supplier::factory()->create(['user_id' => $this->other->id, 'name' => 'Degussa Fremd']);
 
-    AurumServer::actingAs($this->user)->tool(ListSuppliersTool::class, ['search' => 'degu'])
+    AurumServer::tool(ListSuppliersTool::class, ['search' => 'degu'])
         ->assertOk()
         ->assertStructuredContentCount(1, 'suppliers')
         ->assertStructuredContentPath('suppliers.0.name', 'Degussa')
@@ -54,12 +73,12 @@ it('lists and searches only the user\'s suppliers', function () {
 it('finds or creates a supplier', function () {
     $existing = Supplier::factory()->create(['user_id' => $this->user->id, 'name' => 'Degussa']);
 
-    AurumServer::actingAs($this->user)->tool(CreateSupplierTool::class, ['name' => 'degussa'])
+    AurumServer::tool(CreateSupplierTool::class, ['name' => 'degussa'])
         ->assertOk()
         ->assertStructuredContentPath('created', false)
         ->assertStructuredContentPath('supplier.id', $existing->id);
 
-    AurumServer::actingAs($this->user)->tool(CreateSupplierTool::class, ['name' => 'Philoro', 'website' => 'https://philoro.ch'])
+    AurumServer::tool(CreateSupplierTool::class, ['name' => 'Philoro', 'website' => 'https://philoro.ch'])
         ->assertOk()
         ->assertStructuredContentPath('created', true);
 
@@ -67,7 +86,7 @@ it('finds or creates a supplier', function () {
 });
 
 it('lists only the user\'s depositories', function () {
-    AurumServer::actingAs($this->user)->tool(ListDepositoriesTool::class)
+    AurumServer::tool(ListDepositoriesTool::class)
         ->assertOk()
         ->assertStructuredContentCount(1, 'depositories')
         ->assertStructuredContentPath('depositories.0.id', $this->depository->id);
@@ -77,7 +96,7 @@ it('searches the global product templates', function () {
     $vreneli = ProductTemplate::factory()->create(['name' => 'Vreneli', 'material' => Material::Gold->value, 'type' => ProductType::Coin->value, 'weight' => 6.4516, 'year' => 1935]);
     ProductTemplate::factory()->create(['name' => 'Maple Leaf', 'material' => Material::Silver->value]);
 
-    AurumServer::actingAs($this->user)->tool(SearchProductTemplatesTool::class, ['search' => 'vreneli', 'material' => 'gold', 'weight' => 6.4516])
+    AurumServer::tool(SearchProductTemplatesTool::class, ['search' => 'vreneli', 'material' => 'gold', 'weight' => 6.4516])
         ->assertOk()
         ->assertStructuredContentCount(1, 'templates')
         ->assertStructuredContentPath('templates.0.id', $vreneli->id)
@@ -89,13 +108,13 @@ it('searches only the user\'s products with pagination', function () {
     Product::factory()->create(['user_id' => $this->user->id, 'depository_id' => $this->depository->id, 'name' => 'Barren', 'material' => Material::Silver->value]);
     Product::factory()->create(['user_id' => $this->other->id, 'depository_id' => $this->otherDepository->id, 'name' => 'Krugerrand']);
 
-    AurumServer::actingAs($this->user)->tool(SearchProductsTool::class, ['search' => 'kruger', 'per_page' => 2])
+    AurumServer::tool(SearchProductsTool::class, ['search' => 'kruger', 'per_page' => 2])
         ->assertOk()
         ->assertStructuredContentCount(2, 'products')
         ->assertStructuredContentPath('pagination.total', 3)
         ->assertStructuredContentPath('pagination.last_page', 2);
 
-    AurumServer::actingAs($this->user)->tool(SearchProductsTool::class, ['material' => 'silver'])
+    AurumServer::tool(SearchProductsTool::class, ['material' => 'silver'])
         ->assertStructuredContentPath('pagination.total', 1);
 });
 
@@ -104,18 +123,18 @@ it('lists and gets only the user\'s orders', function () {
     Product::factory()->create(['user_id' => $this->user->id, 'depository_id' => $this->depository->id, 'order_id' => $order->id, 'name' => 'Vreneli']);
     $foreign = Order::factory()->create(['user_id' => $this->other->id, 'order_number' => 'B-200']);
 
-    AurumServer::actingAs($this->user)->tool(ListOrdersTool::class)
+    AurumServer::tool(ListOrdersTool::class)
         ->assertOk()
         ->assertStructuredContentCount(1, 'orders')
         ->assertStructuredContentPath('orders.0.order_number', 'A-100')
         ->assertStructuredContentPath('orders.0.products_count', 1);
 
-    AurumServer::actingAs($this->user)->tool(GetOrderTool::class, ['order_id' => $order->id])
+    AurumServer::tool(GetOrderTool::class, ['order_id' => $order->id])
         ->assertOk()
         ->assertStructuredContentPath('order.order_number', 'A-100')
         ->assertStructuredContentPath('order.products.0.name', 'Vreneli');
 
-    AurumServer::actingAs($this->user)->tool(GetOrderTool::class, ['order_id' => $foreign->id])
+    AurumServer::tool(GetOrderTool::class, ['order_id' => $foreign->id])
         ->assertHasErrors(["Order #{$foreign->id} not found."]);
 });
 
@@ -125,7 +144,7 @@ it('creates an order with a new supplier and items from a template and explicit 
         'weight' => 6.4516, 'weight_unit' => WeightUnit::Gram->value, 'fineness' => '900', 'year' => 1935,
     ]);
 
-    AurumServer::actingAs($this->user)->tool(CreateOrderTool::class, [
+    AurumServer::tool(CreateOrderTool::class, [
         'order_number' => '25822',
         'order_date' => '2026-11-01',
         'supplier_name' => 'Degussa',
@@ -163,7 +182,7 @@ it('creates an order with a new supplier and items from a template and explicit 
 });
 
 it('saves nothing on a dry run', function () {
-    AurumServer::actingAs($this->user)->tool(CreateOrderTool::class, [
+    AurumServer::tool(CreateOrderTool::class, [
         'order_number' => 'DRY-1',
         'order_date' => '2026-11-01',
         'supplier_name' => 'Neuer Händler',
@@ -178,7 +197,7 @@ it('saves nothing on a dry run', function () {
         ->assertStructuredContentPath('order.id', null)
         ->assertStructuredContentPath('products.0.name', 'Silbermünze');
 
-    AurumServer::actingAs($this->user)->tool(CreateProductTool::class, [
+    AurumServer::tool(CreateProductTool::class, [
         'name' => 'Silbermünze', 'material' => 'silver', 'type' => 'coin', 'weight' => 1, 'weight_unit' => 'troy_ounce', 'dry_run' => true,
     ])->assertOk()->assertStructuredContentPath('product.id', null);
 
@@ -190,7 +209,7 @@ it('saves nothing on a dry run', function () {
 it('rejects a duplicate order number of the same user', function () {
     Order::factory()->create(['user_id' => $this->user->id, 'order_number' => '25822']);
 
-    AurumServer::actingAs($this->user)->tool(CreateOrderTool::class, ['order_number' => '25822', 'supplier_name' => 'Anderer Händler'])
+    AurumServer::tool(CreateOrderTool::class, ['order_number' => '25822', 'supplier_name' => 'Anderer Händler'])
         ->assertHasErrors(['You already have an order with number 25822']);
 
     expect(Order::query()->where('user_id', $this->user->id)->count())->toBe(1)
@@ -200,11 +219,11 @@ it('rejects a duplicate order number of the same user', function () {
 it('allows the same order number for another user', function () {
     Order::factory()->create(['user_id' => $this->other->id, 'order_number' => '25822']);
 
-    AurumServer::actingAs($this->user)->tool(CreateOrderTool::class, ['order_number' => '25822'])->assertOk();
+    AurumServer::tool(CreateOrderTool::class, ['order_number' => '25822'])->assertOk();
 });
 
 it('rejects invalid enum values and rolls back the whole order', function () {
-    AurumServer::actingAs($this->user)->tool(CreateOrderTool::class, [
+    AurumServer::tool(CreateOrderTool::class, [
         'order_number' => 'X-1',
         'items' => [
             ['name' => 'Ok', 'material' => 'gold', 'type' => 'coin', 'weight' => 1, 'weight_unit' => 'gram'],
@@ -212,7 +231,7 @@ it('rejects invalid enum values and rolls back the whole order', function () {
         ],
     ])->assertHasErrors(['items.1.material']);
 
-    AurumServer::actingAs($this->user)->tool(CreateProductTool::class, [
+    AurumServer::tool(CreateProductTool::class, [
         'name' => 'Kaputt', 'material' => 'gold', 'type' => 'coin', 'weight' => 1, 'weight_unit' => 'gram', 'price_currency' => 'GBP',
     ])->assertHasErrors(['price currency']);
 
@@ -220,25 +239,25 @@ it('rejects invalid enum values and rolls back the whole order', function () {
 });
 
 it('requires the core fields without a template', function () {
-    AurumServer::actingAs($this->user)->tool(CreateProductTool::class, ['name' => 'Etwas'])
+    AurumServer::tool(CreateProductTool::class, ['name' => 'Etwas'])
         ->assertHasErrors(['material', 'weight unit']);
 });
 
 it('does not accept another user\'s depository or supplier', function () {
-    AurumServer::actingAs($this->user)->tool(CreateProductTool::class, [
+    AurumServer::tool(CreateProductTool::class, [
         'name' => 'X', 'material' => 'gold', 'type' => 'coin', 'weight' => 1, 'weight_unit' => 'gram', 'depository_id' => $this->otherDepository->id,
     ])->assertHasErrors(['depository']);
 
     $foreignSupplier = Supplier::factory()->create(['user_id' => $this->other->id]);
 
-    AurumServer::actingAs($this->user)->tool(CreateOrderTool::class, ['order_number' => 'S-1', 'supplier_id' => $foreignSupplier->id])
+    AurumServer::tool(CreateOrderTool::class, ['order_number' => 'S-1', 'supplier_id' => $foreignSupplier->id])
         ->assertHasErrors(['supplier']);
 });
 
 it('creates a product linked to an own order, defaulting the purchase date', function () {
     $order = Order::factory()->create(['user_id' => $this->user->id, 'order_date' => '2026-10-10']);
 
-    AurumServer::actingAs($this->user)->tool(CreateProductTool::class, [
+    AurumServer::tool(CreateProductTool::class, [
         'order_id' => $order->id, 'name' => 'Platinbarren', 'material' => 'platinum', 'type' => 'ingot', 'weight' => 1, 'weight_unit' => 'troy_ounce',
         'price' => 950.5, 'price_currency' => 'EUR',
     ])
@@ -253,7 +272,7 @@ it('creates a product linked to an own order, defaulting the purchase date', fun
 it('cannot create a product in another user\'s order', function () {
     $foreign = Order::factory()->create(['user_id' => $this->other->id]);
 
-    AurumServer::actingAs($this->user)->tool(CreateProductTool::class, [
+    AurumServer::tool(CreateProductTool::class, [
         'order_id' => $foreign->id, 'name' => 'X', 'material' => 'gold', 'type' => 'coin', 'weight' => 1, 'weight_unit' => 'gram',
     ])->assertHasErrors(["Order #{$foreign->id} not found."]);
 
@@ -264,7 +283,7 @@ it('attaches a receipt to an own order', function () {
     Storage::fake('local');
     $order = Order::factory()->create(['user_id' => $this->user->id, 'receipts' => [['path' => 'receipts/old.pdf', 'label' => 'Alt']]]);
 
-    AurumServer::actingAs($this->user)->tool(AttachOrderReceiptTool::class, [
+    AurumServer::tool(AttachOrderReceiptTool::class, [
         'order_id' => $order->id,
         'filename' => 'rechnung.png',
         'content_base64' => base64_encode(pngBytes()),
@@ -287,7 +306,7 @@ it('cannot attach a receipt to another user\'s order', function () {
     Storage::fake('local');
     $foreign = Order::factory()->create(['user_id' => $this->other->id]);
 
-    AurumServer::actingAs($this->user)->tool(AttachOrderReceiptTool::class, [
+    AurumServer::tool(AttachOrderReceiptTool::class, [
         'order_id' => $foreign->id, 'filename' => 'r.png', 'content_base64' => base64_encode(pngBytes()),
     ])->assertHasErrors(["Order #{$foreign->id} not found."]);
 
@@ -299,15 +318,15 @@ it('rejects disallowed receipt files', function () {
     Storage::fake('local');
     $order = Order::factory()->create(['user_id' => $this->user->id]);
 
-    AurumServer::actingAs($this->user)->tool(AttachOrderReceiptTool::class, [
+    AurumServer::tool(AttachOrderReceiptTool::class, [
         'order_id' => $order->id, 'filename' => 'evil.php', 'content_base64' => base64_encode('<?php echo 1;'),
     ])->assertHasErrors(['Only these file types are allowed']);
 
-    AurumServer::actingAs($this->user)->tool(AttachOrderReceiptTool::class, [
+    AurumServer::tool(AttachOrderReceiptTool::class, [
         'order_id' => $order->id, 'filename' => 'fake.pdf', 'content_base64' => base64_encode('<?php echo 1;'),
     ])->assertHasErrors(['is not a PDF or a supported image']);
 
-    AurumServer::actingAs($this->user)->tool(AttachOrderReceiptTool::class, [
+    AurumServer::tool(AttachOrderReceiptTool::class, [
         'order_id' => $order->id, 'filename' => 'x.pdf', 'content_base64' => '***not base64***',
     ])->assertHasErrors(['not valid base64']);
 

@@ -5,6 +5,7 @@ namespace App\Mcp\Tools;
 use App\Enums\Material;
 use App\Enums\ProductType;
 use App\Enums\WeightUnit;
+use App\Mcp\McpPermission;
 use App\Mcp\Support\Present;
 use App\Mcp\Support\ProductInput;
 use App\Models\ProductTemplate;
@@ -22,6 +23,11 @@ use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 #[IsReadOnly]
 class SearchProductTemplatesTool extends AurumTool
 {
+    protected function permission(): McpPermission
+    {
+        return McpPermission::Read;
+    }
+
     public function handle(Request $request): ResponseFactory
     {
         $this->user($request);

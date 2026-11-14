@@ -21,7 +21,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->redirectGuestsTo(fn () => '/app/login');
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        // MCP clients get a 401 with WWW-Authenticate instead of a redirect to the login.
         $exceptions->shouldRenderJsonWhen(
-            fn (Request $request) => $request->is('api/*'),
+            fn (Request $request) => $request->is('api/*', 'mcp/*') || $request->expectsJson(),
         );
     })->create();

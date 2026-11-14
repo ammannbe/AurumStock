@@ -2,6 +2,7 @@
 
 namespace App\Mcp\Tools;
 
+use App\Mcp\McpPermission;
 use App\Mcp\Support\Present;
 use App\Models\Order;
 use App\Support\MediaTypes;
@@ -19,6 +20,11 @@ use Laravel\Mcp\Server\Attributes\Name;
 #[Description('Attach a receipt / invoice file (PDF or image: pdf, jpg, jpeg, png, webp, heic; max 10 MB) to one of the user\'s orders. The file content is passed base64-encoded.')]
 class AttachOrderReceiptTool extends AurumTool
 {
+    protected function permission(): McpPermission
+    {
+        return McpPermission::Receipts;
+    }
+
     public const MAX_BYTES = 10 * 1024 * 1024;
 
     /** @var array<int, string> */

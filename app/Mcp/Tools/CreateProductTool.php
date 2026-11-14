@@ -2,6 +2,7 @@
 
 namespace App\Mcp\Tools;
 
+use App\Mcp\McpPermission;
 use App\Mcp\Support\Present;
 use App\Mcp\Support\ProductInput;
 use App\Models\Order;
@@ -20,6 +21,11 @@ use Throwable;
 #[Description('Create a single product (holding), optionally linked to an existing order of the user (order_id). Use template_id from search-product-templates where possible. Use dry_run=true to preview without saving.')]
 class CreateProductTool extends AurumTool
 {
+    protected function permission(): McpPermission
+    {
+        return McpPermission::Create;
+    }
+
     public function handle(Request $request): ResponseFactory
     {
         $user = $this->user($request);

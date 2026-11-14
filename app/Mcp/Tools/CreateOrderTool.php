@@ -2,6 +2,7 @@
 
 namespace App\Mcp\Tools;
 
+use App\Mcp\McpPermission;
 use App\Mcp\Support\Present;
 use App\Mcp\Support\ProductInput;
 use App\Mcp\Support\SupplierResolver;
@@ -24,6 +25,11 @@ use Throwable;
 #[Description('Create an order (purchase) with optional product line items in one atomic step. The supplier is given by supplier_id or supplier_name (found or created). Each item creates a product linked to the order; use template_id from search-product-templates where possible. Rejects an order_number the user already has. Use dry_run=true first to preview without saving.')]
 class CreateOrderTool extends AurumTool
 {
+    protected function permission(): McpPermission
+    {
+        return McpPermission::Create;
+    }
+
     public function handle(Request $request): ResponseFactory
     {
         $user = $this->user($request);

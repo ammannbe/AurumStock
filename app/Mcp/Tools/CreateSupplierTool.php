@@ -2,6 +2,7 @@
 
 namespace App\Mcp\Tools;
 
+use App\Mcp\McpPermission;
 use App\Mcp\Support\Present;
 use App\Mcp\Support\SupplierResolver;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
@@ -16,6 +17,11 @@ use Laravel\Mcp\Server\Tools\Annotations\IsIdempotent;
 #[IsIdempotent]
 class CreateSupplierTool extends AurumTool
 {
+    protected function permission(): McpPermission
+    {
+        return McpPermission::Create;
+    }
+
     public function handle(Request $request): ResponseFactory
     {
         $user = $this->user($request);

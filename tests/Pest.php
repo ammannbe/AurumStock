@@ -1,6 +1,13 @@
 <?php
 
+use App\Mcp\McpPermission;
+use App\Models\McpGrant;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Laravel\Mcp\Server\Registrar;
+use Laravel\Passport\Client;
+use Laravel\Passport\ClientRepository;
+use Laravel\Passport\Passport;
 use Tests\TestCase;
 
 /*
@@ -47,4 +54,52 @@ expect()->extend('toBeOne', function () {
 function something(): void
 {
     // ..
+}
+
+/**
+ * Passport needs a key pair to issue tokens; generated once per test run.
+ */
+function usePassportTestKeys(): void
+{
+    static $keys = null;
+
+    if ($keys === null) {
+        $key = openssl_pkey_new(['private_key_bits' => 2048, 'private_key_type' => OPENSSL_KEYTYPE_RSA]);
+        assert($key !== false);
+        openssl_pkey_export($key, $privateKey);
+        $details = openssl_pkey_get_details($key);
+        assert(is_array($details));
+        $keys = ['private' => $privateKey, 'public' => $details['key']];
+    }
+
+    config(['passport.private_key' => $keys['private'], 'passport.public_key' => $keys['public']]);
+}
+
+function mcpClient(string $name = 'Claude Code'): Client
+{
+    return app(ClientRepository::class)
+        ->createAuthorizationCodeGrantClient($name, ['http://localhost:33418/callback'], confidential: false);
+}
+
+/**
+ * Connects an AI client for the user with the given permissions and acts as it (Passport token).
+ *
+ * @param  list<McpPermission>|null  $permissions  null = all permissions
+ */
+function mcpConnect(User $user, ?array $permissions = null): Client
+{
+    $client = mcpClient();
+
+    McpGrant::query()->create([
+        'user_id' => $user->id,
+        'oauth_client_id' => $client->getKey(),
+        'permissions' => array_map(
+            fn (McpPermission $permission): string => $permission->value,
+            $permissions ?? McpPermission::cases(),
+        ),
+    ]);
+
+    Passport::actingAs($user, [Registrar::OAUTH_SCOPE], 'api', $client);
+
+    return $client;
 }

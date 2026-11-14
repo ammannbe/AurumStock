@@ -23,6 +23,9 @@ use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\HtmlString;
 use Illuminate\Support\ServiceProvider;
+use Laravel\Mcp\Server\Registrar;
+use Laravel\Passport\Passport;
+use Symfony\Component\HttpFoundation\Response;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -52,8 +55,10 @@ class AppServiceProvider extends ServiceProvider
         // changes when our own assets do, so derive one from the asset files.
         FilamentAsset::appVersion($this->assetVersion());
 
-        // MCP endpoint (routes/ai.php): applied before token auth, so it is keyed by IP.
+        // MCP endpoint (routes/ai.php): applied before OAuth, so it is keyed by IP.
         RateLimiter::for('mcp', fn (Request $request): Limit => Limit::perMinute(60)->by('mcp|'.$request->ip()));
+
+        $this->configurePassport();
 
         // Register product preview JS for Filament
         FilamentAsset::register([
@@ -104,5 +109,21 @@ class AppServiceProvider extends ServiceProvider
         );
 
         return (string) max($timestamps);
+    }
+
+    /**
+     * OAuth for AI clients connected over MCP (routes/ai.php). mcp:use is their only scope; what a
+     * client may do is stored per client in mcp_grants (approval screen, "Connected AI clients").
+     */
+    private function configurePassport(): void
+    {
+        Passport::tokensCan([
+            Registrar::OAUTH_SCOPE => 'Use AurumStock as an AI client (MCP)',
+        ]);
+
+        Passport::tokensExpireIn(now()->addHour());
+        Passport::refreshTokensExpireIn(now()->addDays(90));
+
+        Passport::authorizationView(fn (array $parameters): Response => response()->view('passport.authorize', $parameters));
     }
 }

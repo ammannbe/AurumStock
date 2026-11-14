@@ -18,6 +18,8 @@ The app manages:
 - DDEV
 - MariaDB
 - Filament v5
+- Laravel Passport (OAuth for MCP clients)
+- Laravel MCP
 - Laravel Livewire v4
 - Pest
 - Laravel Pint
@@ -57,6 +59,14 @@ If any command fails, repeat the process from the beginning.
 * Use Filament for main CRUD interfaces.
 * Only authenticated users can access the app.
 * Guests must not access the app.
+
+## MCP Rules
+
+* MCP server `/mcp/aurum` (`routes/ai.php`, `app/Mcp`), OAuth via Laravel Passport (`auth:api`, scope `mcp:use`).
+* Permissions per AI client live in `mcp_grants` (`App\Mcp\McpPermission`); every tool extends `AurumTool` and declares its permission, tools without permission are hidden and refused.
+* Tools only create data, never update or delete existing records; all queries are scoped to the user.
+* Tool output and validation messages are English (`AurumServer::runMethodHandle`).
+* Tests: `mcpConnect($user, [...])` in `tests/Pest.php` acts as a connected client.
 
 ## Exchange Rules
 
