@@ -60,12 +60,12 @@ class AppServiceProvider extends ServiceProvider
 
         $this->configurePassport();
 
-        // Register product preview JS for Filament
+        // Panel assets: sources in resources/filament, published to public/{js,css}/app by filament:assets.
         FilamentAsset::register([
-            Js::make('product-previews')->package('app'),
-            Css::make('overlay')->package('app'),
-            Css::make('dashboard')->package('app'),
-            Css::make('receipts')->package('app'),
+            Js::make('product-previews', resource_path('filament/js/product-previews.js'))->package('app'),
+            Css::make('overlay', resource_path('filament/css/overlay.css'))->package('app'),
+            Css::make('dashboard', resource_path('filament/css/dashboard.css'))->package('app'),
+            Css::make('receipts', resource_path('filament/css/receipts.css'))->package('app'),
         ]);
 
         // Bundled by Vite because it pulls in pdfjs-dist.

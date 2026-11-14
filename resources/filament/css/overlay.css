@@ -1,0 +1,117 @@
+#__img-overlay .close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    padding: 0.5rem 0.75rem;
+    background: white;
+    border-radius: 100%;
+    width: 3rem;
+    height: 3rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.product-slider-stage {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
+}
+
+/* Leave room for the arrows so wide media cannot push them off screen. */
+#__img-overlay .product-slider-stage img,
+#__img-overlay .product-slider-stage video {
+    max-width: min(90vw, calc(100vw - 9rem));
+    max-height: 85vh;
+    object-fit: contain;
+}
+
+.product-slider-btn {
+    flex: none;
+    padding: 0.5rem 0.75rem;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 0.375rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.15s ease-in-out;
+}
+
+.product-slider-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.product-slider-counter {
+    position: absolute;
+    bottom: 0.75rem;
+    left: 50%;
+    transform: translateX(-50%);
+    color: white;
+    background: rgba(0, 0, 0, 0.4);
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+}
+
+.product-preview-wrapper {
+    position: relative;
+    display: inline-block;
+    line-height: 0;
+}
+
+.product-preview-badge {
+    position: absolute;
+    right: 0.25rem;
+    bottom: -0.25rem;
+    padding: 0 0.25rem;
+    min-width: 1.15rem;
+    font-size: 0.65rem;
+    line-height: 1.15rem;
+    text-align: center;
+    color: white;
+    background: rgba(0, 0, 0, 0.7);
+    border-radius: 999px;
+    pointer-events: none;
+}
+
+/* The chart filter dropdown is hardcoded to width xs upstream, which crams the fields. */
+.fi-wi-chart-filter .fi-dropdown-panel {
+    max-width: none !important;
+    width: max-content;
+    min-width: 30rem;
+}
+
+@media (max-width: 40rem) {
+    .fi-wi-chart-filter .fi-dropdown-panel {
+        min-width: 0;
+        width: calc(100vw - 2rem);
+    }
+}
+
+.fi-wi-chart-filter-content {
+    padding: 1rem;
+}
+
+/* FilePond sizes video previews from their intrinsic height, which leaves the fixed-ratio panel mostly empty. */
+.filepond--media-preview video {
+    height: 100% !important;
+    object-fit: cover;
+}
+
+/* Traditional Mongolian glyphs are missing from the default UI font, so inscriptions render as tofu. */
+@font-face {
+    font-family: 'Noto Sans Mongolian';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url('/fonts/app/noto-sans-mongolian.woff2') format('woff2');
+    unicode-range: U+1800-18AF, U+200C-200D, U+202F, U+2048-2049, U+2460-2473,
+        U+25CC, U+3001-3002, U+3008-300F, U+FE3D-FE3E, U+FE41-FE44, U+11660-1166C;
+}
+
+/* The unicode-range above limits the fallback to Mongolian, so other scripts keep the UI font. */
+.aurum-inscription,
+.product-slider-counter {
+    font-family: 'Noto Sans Mongolian', var(--font-family), ui-sans-serif, system-ui, sans-serif;
+}

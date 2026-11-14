@@ -1,9 +1,9 @@
 
+/* Tailwind (first, so its layer order theme, base, components, utilities applies) */
+@import "tailwindcss";
+
 /* Utilities */
 @import './resets.css' layer(utilities);
-
-/* Tailwind */
-@import "tailwindcss";
 
 /* Views */
 @source '../views';
