@@ -35,6 +35,8 @@ class Present
             'depository_id' => $product->getAttribute('depository_id'),
             'order_id' => $product->getAttribute('order_id'),
             'template_id' => $product->template_id,
+            'has_front_image' => filled($product->getAttribute('front_image_path')),
+            'has_back_image' => filled($product->getAttribute('back_image_path')),
         ];
     }
 

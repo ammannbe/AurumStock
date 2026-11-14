@@ -157,7 +157,7 @@ AurumStock exposes an [MCP](https://modelcontextprotocol.io/) server for importi
 
 - Endpoint: `https://<host>/mcp/aurum` (Streamable HTTP, rate limited to 60 requests per minute)
 - Auth: OAuth 2 with [Laravel Passport](https://laravel.com/docs/passport). AI clients register themselves (dynamic client registration), the user signs in and ticks the permissions on the approval screen. Permissions are stored per client in `mcp_grants` and can be changed or revoked in the app under **Connected AI clients**, which also shows how to connect each client.
-- Permissions: `read` (orders, products, suppliers, depositories), `create` (orders, products, suppliers), `receipts` (attach receipts). Tools without permission are neither listed nor callable.
+- Permissions: `read` (orders, products, suppliers, depositories), `create` (orders, products, suppliers), `receipts` (attach receipts), `images` (add missing front/back images to products; existing images are never replaced). Tools without permission are neither listed nor callable.
 
 Example (Claude Code):
 
@@ -175,6 +175,7 @@ Tools (all scoped to the signed-in user):
 | `create-order` | create | Order with supplier and product line items, atomic, supports `dry_run` |
 | `create-product` | create | Single product, optionally linked to an order, supports `dry_run` |
 | `attach-order-receipt` | receipts | Attach a PDF/image receipt (base64, max 10 MB) to an order |
+| `set-product-image` | images | Add the front (image side) or back (value side) image (base64, max 10 MB) to a product without one |
 
 Deployment: after `php artisan migrate --force`, create the OAuth keys once with `php artisan passport:keys` (stored in `storage/oauth-*.key`, git-ignored, must persist across deployments) or set `PASSPORT_PRIVATE_KEY` / `PASSPORT_PUBLIC_KEY` in the environment.
 

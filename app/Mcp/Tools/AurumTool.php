@@ -7,6 +7,7 @@ use App\Models\McpGrant;
 use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
+use Illuminate\Validation\ValidationException;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
@@ -58,6 +59,26 @@ abstract class AurumTool extends Tool
     protected function respond(string $summary, array $data): ResponseFactory
     {
         return Response::make(Response::text($summary))->withStructuredContent($data);
+    }
+
+    /**
+     * Decodes a base64 file upload; data URLs ("data:image/png;base64,....") are accepted as well.
+     *
+     * @throws ValidationException
+     */
+    protected function decodeBase64(string $content): string
+    {
+        if (str_starts_with($content, 'data:') && str_contains($content, ',')) {
+            $content = substr($content, strpos($content, ',') + 1);
+        }
+
+        $bytes = base64_decode(preg_replace('/\s+/', '', $content) ?? '', true);
+
+        if ($bytes === false || $bytes === '') {
+            throw ValidationException::withMessages(['content_base64' => 'The file content is not valid base64.']);
+        }
+
+        return $bytes;
     }
 
     /**

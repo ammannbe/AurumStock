@@ -58,7 +58,7 @@ class AttachOrderReceiptTool extends AurumTool
             ]);
         }
 
-        $bytes = $this->decode($data['content_base64']);
+        $bytes = $this->decodeBase64($data['content_base64']);
 
         if (strlen($bytes) > self::MAX_BYTES) {
             throw ValidationException::withMessages(['content_base64' => 'The file must not be larger than 10 MB.']);
@@ -93,22 +93,6 @@ class AttachOrderReceiptTool extends AurumTool
                 'receipts' => Present::receipts($order),
             ],
         );
-    }
-
-    protected function decode(string $content): string
-    {
-        // Accept data URLs ("data:application/pdf;base64,....") as well.
-        if (str_starts_with($content, 'data:') && str_contains($content, ',')) {
-            $content = substr($content, strpos($content, ',') + 1);
-        }
-
-        $bytes = base64_decode(preg_replace('/\s+/', '', $content) ?? '', true);
-
-        if ($bytes === false || $bytes === '') {
-            throw ValidationException::withMessages(['content_base64' => 'The file content is not valid base64.']);
-        }
-
-        return $bytes;
     }
 
     public function schema(JsonSchema $schema): array

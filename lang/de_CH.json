@@ -263,5 +263,6 @@
   "Client": "Client",
   "Authorize": "Autorisieren",
   "Revoke": "Entziehen",
-  "Attach receipts to orders": "Belege an Bestellungen anhängen"
+  "Attach receipts to orders": "Belege an Bestellungen anhängen",
+  "Add missing images to products": "Fehlende Bilder zu Produkten hinzufügen"
 }

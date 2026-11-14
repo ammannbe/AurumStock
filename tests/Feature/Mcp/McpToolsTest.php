@@ -15,6 +15,7 @@ use App\Mcp\Tools\ListOrdersTool;
 use App\Mcp\Tools\ListSuppliersTool;
 use App\Mcp\Tools\SearchProductsTool;
 use App\Mcp\Tools\SearchProductTemplatesTool;
+use App\Mcp\Tools\SetProductImageTool;
 use App\Models\Depository;
 use App\Models\Order;
 use App\Models\Product;
@@ -332,4 +333,78 @@ it('rejects disallowed receipt files', function () {
 
     expect($order->refresh()->receipts)->toBeNull()
         ->and(Storage::disk('local')->allFiles())->toBe([]);
+});
+
+it('adds front and back images to an own product', function () {
+    Storage::fake('public');
+    $product = Product::factory()->create(['user_id' => $this->user->id, 'depository_id' => $this->depository->id, 'front_image_path' => null, 'back_image_path' => null]);
+
+    AurumServer::tool(SetProductImageTool::class, [
+        'product_id' => $product->id, 'side' => 'front', 'filename' => 'britannia-front.png', 'content_base64' => 'data:image/png;base64,'.base64_encode(pngBytes()),
+    ])
+        ->assertOk()
+        ->assertStructuredContentPath('has_front_image', true)
+        ->assertStructuredContentPath('has_back_image', false);
+
+    AurumServer::tool(SetProductImageTool::class, [
+        'product_id' => $product->id, 'side' => 'back', 'filename' => 'britannia-back.png', 'content_base64' => base64_encode(pngBytes()),
+    ])->assertOk();
+
+    $product->refresh();
+    expect($product->front_image_path)->toStartWith('products/')->toEndWith('.png')
+        ->and(str_contains((string) $product->front_image_path, 'britannia'))->toBeFalse()
+        ->and($product->back_image_path)->toStartWith('products/')
+        ->and($product->back_image_path === $product->front_image_path)->toBeFalse();
+
+    Storage::disk('public')->assertExists([$product->front_image_path, $product->back_image_path]);
+});
+
+it('never replaces an existing product image', function () {
+    Storage::fake('public');
+    $product = Product::factory()->create(['user_id' => $this->user->id, 'depository_id' => $this->depository->id, 'front_image_path' => 'products/old.png']);
+
+    AurumServer::tool(SetProductImageTool::class, [
+        'product_id' => $product->id, 'side' => 'front', 'filename' => 'new.png', 'content_base64' => base64_encode(pngBytes()),
+    ])->assertHasErrors(['already has a front image']);
+
+    expect($product->refresh()->front_image_path)->toBe('products/old.png')
+        ->and(Storage::disk('public')->allFiles())->toBe([]);
+});
+
+it('cannot add an image to another user\'s product', function () {
+    Storage::fake('public');
+    $foreign = Product::factory()->create(['user_id' => $this->other->id, 'depository_id' => $this->otherDepository->id, 'front_image_path' => null]);
+
+    AurumServer::tool(SetProductImageTool::class, [
+        'product_id' => $foreign->id, 'side' => 'front', 'filename' => 'x.png', 'content_base64' => base64_encode(pngBytes()),
+    ])->assertHasErrors(["Product #{$foreign->id} not found."]);
+
+    expect($foreign->refresh()->front_image_path)->toBeNull()
+        ->and(Storage::disk('public')->allFiles())->toBe([]);
+});
+
+it('rejects invalid product images and needs the images permission', function () {
+    Storage::fake('public');
+    $product = Product::factory()->create(['user_id' => $this->user->id, 'depository_id' => $this->depository->id, 'front_image_path' => null]);
+
+    AurumServer::tool(SetProductImageTool::class, [
+        'product_id' => $product->id, 'side' => 'top', 'filename' => 'x.png', 'content_base64' => base64_encode(pngBytes()),
+    ])->assertHasErrors(['side must be "front"']);
+
+    AurumServer::tool(SetProductImageTool::class, [
+        'product_id' => $product->id, 'side' => 'front', 'filename' => 'evil.php', 'content_base64' => base64_encode('<?php echo 1;'),
+    ])->assertHasErrors(['Only these file types are allowed']);
+
+    AurumServer::tool(SetProductImageTool::class, [
+        'product_id' => $product->id, 'side' => 'front', 'filename' => 'fake.png', 'content_base64' => base64_encode('%PDF-1.4 not an image'),
+    ])->assertHasErrors(['is not a supported image']);
+
+    mcpConnect($this->user, [McpPermission::Read, McpPermission::Create, McpPermission::Receipts]);
+
+    AurumServer::tool(SetProductImageTool::class, [
+        'product_id' => $product->id, 'side' => 'front', 'filename' => 'x.png', 'content_base64' => base64_encode(pngBytes()),
+    ])->assertHasErrors();
+
+    expect($product->refresh()->front_image_path)->toBeNull()
+        ->and(Storage::disk('public')->allFiles())->toBe([]);
 });

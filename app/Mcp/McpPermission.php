@@ -11,6 +11,7 @@ enum McpPermission: string
     case Read = 'read';
     case Create = 'create';
     case Receipts = 'receipts';
+    case Images = 'images';
 
     public function label(): string
     {
@@ -18,6 +19,7 @@ enum McpPermission: string
             McpPermission::Read => __('Read orders, products, suppliers and depositories'),
             McpPermission::Create => __('Create orders, products and suppliers'),
             McpPermission::Receipts => __('Attach receipts to orders'),
+            McpPermission::Images => __('Add missing images to products'),
         };
     }
 

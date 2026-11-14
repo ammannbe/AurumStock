@@ -12,6 +12,7 @@ use App\Mcp\Tools\ListOrdersTool;
 use App\Mcp\Tools\ListSuppliersTool;
 use App\Mcp\Tools\SearchProductsTool;
 use App\Mcp\Tools\SearchProductTemplatesTool;
+use App\Mcp\Tools\SetProductImageTool;
 use Illuminate\Support\Facades\App;
 use Laravel\Mcp\Server;
 use Laravel\Mcp\Server\Attributes\Instructions;
@@ -38,6 +39,9 @@ use Laravel\Mcp\Transport\JsonRpcResponse;
     5. create-order with dry_run=true, show the preview to the user, then call it again without dry_run.
     6. attach-order-receipt to store the receipt file (base64) on the order.
 
+    Product images: set-product-image adds the front (image side) or back (value side) image of a product
+    (base64). It only fills an empty side (see has_front_image / has_back_image); existing images are kept.
+
     Conventions:
     - price is the total price of a line (all pieces), price_currency USD, CHF or EUR (default: user preference).
     - amount is the number of pieces; weight is the gross weight per piece.
@@ -57,6 +61,7 @@ class AurumServer extends Server
         CreateOrderTool::class,
         CreateProductTool::class,
         AttachOrderReceiptTool::class,
+        SetProductImageTool::class,
     ];
 
     protected array $resources = [];
