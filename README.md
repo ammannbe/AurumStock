@@ -244,3 +244,7 @@ ddev composer phpstan
 ## Authors
 
 - Benjamin Ammann
+
+## License
+
+AGPLv3 or later, see [LICENSE](LICENSE).
