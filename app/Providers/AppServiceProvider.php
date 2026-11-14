@@ -14,9 +14,12 @@ use Filament\Support\Facades\FilamentColor;
 use Filament\Support\Facades\FilamentView;
 use Filament\Tables\View\TablesRenderHook;
 use Filament\View\PanelsRenderHook;
+use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Contracts\Translation\Loader;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\HtmlString;
 use Illuminate\Support\ServiceProvider;
@@ -48,6 +51,9 @@ class AppServiceProvider extends ServiceProvider
         // Filament falls back to its own version for cache busting, which never
         // changes when our own assets do, so derive one from the asset files.
         FilamentAsset::appVersion($this->assetVersion());
+
+        // MCP endpoint (routes/ai.php): applied before token auth, so it is keyed by IP.
+        RateLimiter::for('mcp', fn (Request $request): Limit => Limit::perMinute(60)->by('mcp|'.$request->ip()));
 
         // Register product preview JS for Filament
         FilamentAsset::register([

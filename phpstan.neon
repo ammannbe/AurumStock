@@ -23,6 +23,10 @@ parameters:
         - message: '#Call to an undefined method .*TestCall::#'
           paths:
               - tests/*
+        # Pest beforeEach() properties on $this (e.g. $this->user) are unknown to PHPStan.
+        - message: '#Access to an undefined property Pest\\PendingCalls\\TestCall::\$#'
+          paths:
+              - tests/*
         - message: '#does not specify its types: TRelatedModel, TDeclaringModel, TResult#'
           paths:
               - app/Filament/Widgets/*

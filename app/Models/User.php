@@ -14,12 +14,17 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
 
 /**
+ * @property string|null $mcp_token_hash
+ * @property Carbon|null $mcp_token_created_at
+ *
  * @method static \Database\Factories\UserFactory factory(...$parameters)
  */
 #[Fillable(['name', 'email', 'password', 'notes', 'two_factor_enabled', 'passkey_enabled', 'is_admin', 'preferred_currency', 'preferred_locale'])]
-#[Hidden(['password', 'remember_token'])]
+#[Hidden(['password', 'remember_token', 'mcp_token_hash'])]
 class User extends Authenticatable implements FilamentUser, HasLocalePreference
 {
     /** @use HasFactory<UserFactory> */
@@ -32,7 +37,56 @@ class User extends Authenticatable implements FilamentUser, HasLocalePreference
         'passkey_enabled' => 'boolean',
         'is_admin' => 'boolean',
         'preferred_currency' => Currency::class,
+        'mcp_token_created_at' => 'datetime',
     ];
+
+    public const MCP_TOKEN_PREFIX = 'aurum_';
+
+    /**
+     * Generates a new personal MCP token, stores only its hash and returns
+     * the plaintext, which cannot be recovered afterwards.
+     */
+    public function issueMcpToken(): string
+    {
+        $token = self::MCP_TOKEN_PREFIX.Str::random(48);
+
+        $this->forceFill([
+            'mcp_token_hash' => self::hashMcpToken($token),
+            'mcp_token_created_at' => now(),
+        ])->save();
+
+        return $token;
+    }
+
+    public function revokeMcpToken(): void
+    {
+        $this->forceFill([
+            'mcp_token_hash' => null,
+            'mcp_token_created_at' => null,
+        ])->save();
+    }
+
+    public static function hashMcpToken(string $token): string
+    {
+        return hash('sha256', $token);
+    }
+
+    public static function findByMcpToken(string $token): ?self
+    {
+        if (! str_starts_with($token, self::MCP_TOKEN_PREFIX)) {
+            return null;
+        }
+
+        $hash = self::hashMcpToken($token);
+
+        $user = self::query()->where('mcp_token_hash', $hash)->first();
+
+        if (! $user || ! is_string($user->mcp_token_hash) || ! hash_equals($user->mcp_token_hash, $hash)) {
+            return null;
+        }
+
+        return $user;
+    }
 
     public function preferredLocale(): string
     {

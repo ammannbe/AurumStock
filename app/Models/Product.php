@@ -202,7 +202,17 @@ class Product extends Model
      */
     public static function fromTemplate(ProductTemplate $template, array $attributes = []): self
     {
-        $data = [
+        return static::query()->create(array_merge(static::attributesFromTemplate($template), $attributes));
+    }
+
+    /**
+     * Attributes a new product inherits from the given template.
+     *
+     * @return array<string, mixed>
+     */
+    public static function attributesFromTemplate(ProductTemplate $template): array
+    {
+        return [
             'template_id' => $template->id,
             'source_hash' => $template->source_hash,
             'name' => $template->name,
@@ -225,8 +235,6 @@ class Product extends Model
             'fineness' => $template->fineness,
             'mintage' => $template->mintage,
         ];
-
-        return static::query()->create(array_merge($data, $attributes));
     }
 
     public function isSynchronizedWithTemplate(): bool

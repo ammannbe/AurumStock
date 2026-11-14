@@ -151,6 +151,53 @@ Scheduler cron entry:
 - Application access is handled by Filament user panel auth.
 - Legacy Laravel auth routes such as `/login` and `/register` are intentionally unavailable.
 
+## MCP (AI import)
+
+AurumStock exposes an [MCP](https://modelcontextprotocol.io/) server for importing orders and products with an AI client (e.g. from a receipt PDF).
+
+- Endpoint: `https://<host>/mcp/aurum` (Streamable HTTP, rate limited to 60 requests per minute)
+- Auth: personal token per user, sent as `Authorization: Bearer <token>`. Only the token hash is stored.
+
+Create (or rotate) and revoke a token:
+
+```bash
+ddev artisan app:mcp-token user@example.com
+ddev artisan app:mcp-token user@example.com --revoke
+```
+
+Example client configuration (Claude Code):
+
+```bash
+claude mcp add --transport http aurumstock https://<host>/mcp/aurum --header "Authorization: Bearer <token>"
+```
+
+Generic MCP client (`mcp.json`):
+
+```json
+{
+    "mcpServers": {
+        "aurumstock": {
+            "type": "http",
+            "url": "https://<host>/mcp/aurum",
+            "headers": { "Authorization": "Bearer <token>" }
+        }
+    }
+}
+```
+
+Tools (all scoped to the token's user):
+
+| Tool | Purpose |
+|---|---|
+| `list-suppliers`, `create-supplier` | Find or create suppliers |
+| `list-depositories` | Depositories for `depository_id` |
+| `search-product-templates` | Match line items to product templates |
+| `search-products` | Search existing products |
+| `list-orders`, `get-order` | Find orders (e.g. duplicate check) and their products |
+| `create-order` | Order with supplier and product line items, atomic, supports `dry_run` |
+| `create-product` | Single product, optionally linked to an order, supports `dry_run` |
+| `attach-order-receipt` | Attach a PDF/image receipt (base64, max 10 MB) to an order |
+
 ## Translations
 
 Application translations are provided via JSON language files:

@@ -270,6 +270,32 @@ class ProductResource extends Resource
             ->all();
     }
 
+    /**
+     * Countries of origin offered in the product form (and accepted by the MCP import).
+     *
+     * @return array<string, string>
+     */
+    public static function countryOfOriginOptions(): array
+    {
+        return [
+            'CH' => __('Switzerland (CH)'),
+            'DE' => __('Germany (DE)'),
+            'AT' => __('Austria (AT)'),
+            'GB' => __('United Kingdom (GB)'),
+            'US' => __('United States (US)'),
+            'CA' => __('Canada (CA)'),
+            'AU' => __('Australia (AU)'),
+            'ZA' => __('South Africa (ZA)'),
+            'FR' => __('France (FR)'),
+            'RU' => __('Russia (RU)'),
+            'CN' => __('China (CN)'),
+            'MX' => __('Mexico (MX)'),
+            'CK' => __('Cook Islands (CK)'),
+            'MN' => __('Mongolia (MN)'),
+            'NU' => __('Niue (NU)'),
+        ];
+    }
+
     public static function getEloquentQuery(): EloquentBuilder
     {
         $userId = Auth::id();
@@ -355,23 +381,7 @@ class ProductResource extends Resource
                     ->nullable()->columnSpan(4),
                 Select::make('country_of_origin')
                     ->label(__('Country of Origin'))
-                    ->options([
-                        'CH' => __('Switzerland (CH)'),
-                        'DE' => __('Germany (DE)'),
-                        'AT' => __('Austria (AT)'),
-                        'GB' => __('United Kingdom (GB)'),
-                        'US' => __('United States (US)'),
-                        'CA' => __('Canada (CA)'),
-                        'AU' => __('Australia (AU)'),
-                        'ZA' => __('South Africa (ZA)'),
-                        'FR' => __('France (FR)'),
-                        'RU' => __('Russia (RU)'),
-                        'CN' => __('China (CN)'),
-                        'MX' => __('Mexico (MX)'),
-                        'CK' => __('Cook Islands (CK)'),
-                        'MN' => __('Mongolia (MN)'),
-                        'NU' => __('Niue (NU)'),
-                    ])
+                    ->options(fn (): array => static::countryOfOriginOptions())
                     ->searchable()
                     ->nullable()->columnSpan(4),
             ])->columns(8)->columnSpanFull(),

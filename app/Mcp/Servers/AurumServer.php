@@ -1,0 +1,83 @@
+<?php
+
+namespace App\Mcp\Servers;
+
+use App\Mcp\Tools\AttachOrderReceiptTool;
+use App\Mcp\Tools\CreateOrderTool;
+use App\Mcp\Tools\CreateProductTool;
+use App\Mcp\Tools\CreateSupplierTool;
+use App\Mcp\Tools\GetOrderTool;
+use App\Mcp\Tools\ListDepositoriesTool;
+use App\Mcp\Tools\ListOrdersTool;
+use App\Mcp\Tools\ListSuppliersTool;
+use App\Mcp\Tools\SearchProductsTool;
+use App\Mcp\Tools\SearchProductTemplatesTool;
+use Illuminate\Support\Facades\App;
+use Laravel\Mcp\Server;
+use Laravel\Mcp\Server\Attributes\Instructions;
+use Laravel\Mcp\Server\Attributes\Name;
+use Laravel\Mcp\Server\Attributes\Version;
+use Laravel\Mcp\Server\ServerContext;
+use Laravel\Mcp\Transport\JsonRpcRequest;
+use Laravel\Mcp\Transport\JsonRpcResponse;
+
+#[Name('AurumStock')]
+#[Version('1.0.0')]
+#[Instructions(<<<'MARKDOWN'
+    AurumStock is a personal precious metals inventory (gold, silver, platinum, palladium coins and bars).
+    This server imports purchases (orders) and holdings (products) for the authenticated user only.
+    Users usually speak German (Swiss German spelling, "ss" instead of "ß"); answer them in German.
+
+    Recommended import workflow for a receipt / invoice:
+    1. list-orders (search by order number) to make sure the order was not imported yet.
+    2. list-suppliers to find the supplier; otherwise pass supplier_name to create-order (found or created).
+    3. list-depositories to pick the depository_id (ask the user if there is more than one and it is unclear).
+    4. search-product-templates for every line item and use template_id when a template matches
+       (material, type, weight and fineness must match). Without a template give name, material, type,
+       weight and weight_unit explicitly.
+    5. create-order with dry_run=true, show the preview to the user, then call it again without dry_run.
+    6. attach-order-receipt to store the receipt file (base64) on the order.
+
+    Conventions:
+    - price is the total price of a line (all pieces), price_currency USD, CHF or EUR (default: user preference).
+    - amount is the number of pieces; weight is the gross weight per piece.
+    - Dates are YYYY-MM-DD; purchase_date defaults to the order date.
+    - Never guess enum values; validation errors are returned as readable tool errors, fix the input and retry.
+    MARKDOWN)]
+class AurumServer extends Server
+{
+    protected array $tools = [
+        ListSuppliersTool::class,
+        CreateSupplierTool::class,
+        ListDepositoriesTool::class,
+        SearchProductTemplatesTool::class,
+        SearchProductsTool::class,
+        ListOrdersTool::class,
+        GetOrderTool::class,
+        CreateOrderTool::class,
+        CreateProductTool::class,
+        AttachOrderReceiptTool::class,
+    ];
+
+    protected array $resources = [];
+
+    protected array $prompts = [];
+
+    /**
+     * Tool output and validation messages are always English for the AI client,
+     * independent of the app (and fallback) locale, which has no German validation lines.
+     *
+     * @return iterable<JsonRpcResponse>|JsonRpcResponse
+     */
+    protected function runMethodHandle(JsonRpcRequest $request, ServerContext $context): iterable|JsonRpcResponse
+    {
+        $locale = App::getLocale();
+        App::setLocale('en');
+
+        try {
+            return parent::runMethodHandle($request, $context);
+        } finally {
+            App::setLocale($locale);
+        }
+    }
+}
