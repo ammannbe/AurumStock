@@ -67,7 +67,7 @@ class ProductReplicateActionTest extends TestCase
         $this->get('/app/products/create?duplicate='.$product->getKey())->assertStatus(200);
 
         Livewire::withQueryParams(['duplicate' => $product->getKey()])
-            ->test(CreateProduct::class) // @phpstan-ignore argument.templateType
+            ->test(CreateProduct::class)
             ->assertSchemaStateSet([
                 'name' => $product->name,
                 'depository_id' => $depository->id,
@@ -112,7 +112,7 @@ class ProductReplicateActionTest extends TestCase
         $this->actingAs($user);
 
         Livewire::withQueryParams(['duplicate' => $product->getKey()])
-            ->test(CreateProduct::class); // @phpstan-ignore argument.templateType
+            ->test(CreateProduct::class);
 
         $disk = Storage::disk('public');
         $filesAfterMountingOnly = collect($disk->files('products'))->reject(fn (string $file) => $file === $frontPath);
@@ -140,7 +140,7 @@ class ProductReplicateActionTest extends TestCase
         $this->actingAs($user);
 
         Livewire::withQueryParams(['duplicate' => $product->getKey()])
-            ->test(CreateProduct::class) // @phpstan-ignore argument.templateType
+            ->test(CreateProduct::class)
             ->call('create')
             ->assertHasNoFormErrors();
 
@@ -177,7 +177,7 @@ class ProductReplicateActionTest extends TestCase
         $this->actingAs($other);
 
         Livewire::withQueryParams(['duplicate' => $product->getKey()])
-            ->test(CreateProduct::class) // @phpstan-ignore argument.templateType
+            ->test(CreateProduct::class)
             ->assertSchemaStateSet(['name' => null]);
     }
 }

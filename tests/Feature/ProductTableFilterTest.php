@@ -63,7 +63,9 @@ class ProductTableFilterTest extends TestCase
             'purchase_date' => '2025-01-01',
         ]);
 
+        // Both columns are hidden by default, and Filament ignores sorting on hidden columns.
         Livewire::test(ListProducts::class)
+            ->toggleAllTableColumns()
             ->sortTable('tax_year')
             ->assertCanSeeTableRecords([$older, $newer], inOrder: true)
             ->sortTable('tax_year', 'desc')

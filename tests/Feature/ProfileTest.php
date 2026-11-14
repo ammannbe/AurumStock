@@ -21,7 +21,7 @@ test('profile information can be updated', function () {
     $user = User::factory()->create();
 
     $component = Livewire::actingAs($user)
-        ->test(Profile::class); // @phpstan-ignore argument.templateType
+        ->test(Profile::class);
 
     $component
         ->set('data.name', 'Test User')

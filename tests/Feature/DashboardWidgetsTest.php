@@ -241,7 +241,8 @@ class DashboardWidgetsTest extends TestCase
 
         $this->artisan('app:backfill-stock-price-histories')->assertSuccessful();
 
-        $this->assertSame(1, $stock->fresh()->histories()->count());
+        $stock->refresh();
+        $this->assertSame(1, $stock->histories()->count());
     }
 
     public function test_historical_metalpriceapi_import_can_store_a_date_range(): void

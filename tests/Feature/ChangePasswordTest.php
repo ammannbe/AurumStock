@@ -21,7 +21,7 @@ test('password can be changed from change password page', function () {
     $user = User::factory()->create();
 
     $component = Livewire::actingAs($user)
-        ->test(ChangePassword::class); // @phpstan-ignore argument.templateType
+        ->test(ChangePassword::class);
 
     $component
         ->set('data.current_password', 'password')
@@ -37,7 +37,7 @@ test('password is not changed with invalid current password', function () {
     $user = User::factory()->create();
 
     $component = Livewire::actingAs($user)
-        ->test(ChangePassword::class); // @phpstan-ignore argument.templateType
+        ->test(ChangePassword::class);
 
     $component
         ->set('data.current_password', 'wrong-password')

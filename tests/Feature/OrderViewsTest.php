@@ -341,7 +341,6 @@ class OrderViewsTest extends TestCase
 
         // The link is only useful if the list page actually binds these params.
         Livewire::withQueryParams($query)
-            // @phpstan-ignore argument.templateType
             ->test(ListProducts::class)
             ->assertCanSeeTableRecords([$inOrder])
             ->assertCanNotSeeTableRecords([$notInOrder]);
