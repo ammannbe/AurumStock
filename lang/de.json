@@ -255,7 +255,7 @@
   "The client loses access right away. To use it again, connect it again.": "Der Client verliert den Zugriff sofort. Um ihn wieder zu nutzen, verbinde ihn neu.",
   "Connected AI clients": "Verbundene KI-Clients",
   "Connected clients": "Verbundene Clients",
-  "Only your own data. The client cannot change or delete existing records.": "Nur deine eigenen Daten. Der Client kann bestehende Einträge weder ändern noch löschen.",
+  "Only your own data. The client cannot change or delete existing records, except images, media and inscriptions with the matching permission.": "Nur deine eigenen Daten. Bestehende Einträge kann der Client nicht ändern oder löschen, ausser Bilder, Medien und Bildtexte mit der entsprechenden Berechtigung.",
   "Read orders, products, suppliers and depositories": "Bestellungen, Produkte, Lieferanten und Depots lesen",
   "Authorize :client": ":client autorisieren",
   "add a remote MCP server with this address and OAuth.": "einen Remote-MCP-Server mit dieser Adresse und OAuth hinzufügen.",
@@ -267,5 +267,6 @@
   "Authorize": "Autorisieren",
   "Revoke": "Entziehen",
   "Attach receipts to orders": "Belege an Bestellungen anhängen",
-  "Add images, videos and missing inscriptions to products": "Bilder, Videos und fehlende Bildtexte zu Produkten hinzufügen"
+  "Add images, videos and missing inscriptions to products": "Bilder, Videos und fehlende Bildtexte zu Produkten hinzufügen",
+  "Replace and remove product images, media and inscriptions": "Bilder, Medien und Bildtexte von Produkten ersetzen und entfernen"
 }

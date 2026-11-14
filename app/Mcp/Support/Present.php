@@ -37,7 +37,10 @@ class Present
             'template_id' => $product->template_id,
             'has_front_image' => filled($product->getAttribute('front_image_path')),
             'has_back_image' => filled($product->getAttribute('back_image_path')),
-            'media_count' => count(array_filter(is_array($product->assets) ? $product->assets : [], 'is_array')),
+            'media' => array_values(array_map(fn (array $asset): array => [
+                'label' => $asset['label'] ?? null,
+                'filename' => basename((string) $asset['path']),
+            ], array_filter(is_array($product->assets) ? $product->assets : [], fn (mixed $asset): bool => is_array($asset) && filled($asset['path'] ?? null)))),
             'text_front' => $product->getAttribute('text_front'),
             'text_back' => $product->getAttribute('text_back'),
         ];

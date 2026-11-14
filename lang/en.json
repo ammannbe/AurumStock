@@ -255,7 +255,7 @@
   "The client loses access right away. To use it again, connect it again.": "The client loses access right away. To use it again, connect it again.",
   "Connected AI clients": "Connected AI clients",
   "Connected clients": "Connected clients",
-  "Only your own data. The client cannot change or delete existing records.": "Only your own data. The client cannot change or delete existing records.",
+  "Only your own data. The client cannot change or delete existing records, except images, media and inscriptions with the matching permission.": "Only your own data. The client cannot change or delete existing records, except images, media and inscriptions with the matching permission.",
   "Read orders, products, suppliers and depositories": "Read orders, products, suppliers and depositories",
   "Authorize :client": "Authorize :client",
   "add a remote MCP server with this address and OAuth.": "add a remote MCP server with this address and OAuth.",
@@ -267,5 +267,6 @@
   "Authorize": "Authorize",
   "Revoke": "Revoke",
   "Attach receipts to orders": "Attach receipts to orders",
-  "Add images, videos and missing inscriptions to products": "Add images, videos and missing inscriptions to products"
+  "Add images, videos and missing inscriptions to products": "Add images, videos and missing inscriptions to products",
+  "Replace and remove product images, media and inscriptions": "Replace and remove product images, media and inscriptions"
 }

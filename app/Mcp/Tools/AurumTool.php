@@ -32,6 +32,30 @@ abstract class AurumTool extends Tool
     }
 
     /**
+     * Whether the user also gave the AI client another permission (e.g. to replace existing data).
+     */
+    protected function allows(Request $request, McpPermission $permission): bool
+    {
+        $user = $request->user();
+
+        return $user instanceof User && (McpGrant::current($user)?->allows($permission) ?? false);
+    }
+
+    /**
+     * Fails unless the AI client may replace or remove existing product media and inscriptions.
+     *
+     * @throws ValidationException
+     */
+    protected function ensureMayReplace(Request $request, string $field, string $what): void
+    {
+        if (! $this->allows($request, McpPermission::ReplaceMedia)) {
+            throw ValidationException::withMessages([
+                $field => "{$what} This AI client has no permission to replace or remove existing media and inscriptions; the user can grant it under \"Connected AI clients\" or change it in the app.",
+            ]);
+        }
+    }
+
+    /**
      * The authenticated user; every query of a tool is scoped to them.
      *
      * @throws AuthenticationException

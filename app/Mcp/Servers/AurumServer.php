@@ -11,6 +11,7 @@ use App\Mcp\Tools\GetOrderTool;
 use App\Mcp\Tools\ListDepositoriesTool;
 use App\Mcp\Tools\ListOrdersTool;
 use App\Mcp\Tools\ListSuppliersTool;
+use App\Mcp\Tools\RemoveProductMediaTool;
 use App\Mcp\Tools\SearchProductsTool;
 use App\Mcp\Tools\SearchProductTemplatesTool;
 use App\Mcp\Tools\SetProductImageTool;
@@ -48,7 +49,9 @@ use Laravel\Mcp\Transport\JsonRpcResponse;
     additional media, with an optional label; prefer media_url. set-product-texts sets the inscriptions
     (text_front = image side, text_back = value side, parts separated by " · ") when they are empty.
     Dealer pages (e.g. CIT) often list several images and videos: use front/back for the two coin sides
-    and add-product-media for the rest. Never replace or remove existing media or texts.
+    and add-product-media for the rest. Existing images and texts are only replaced with replace=true, and
+    remove-product-media removes additional media; both need the separate replace permission and should
+    only be used when the user asks for it.
 
     Conventions:
     - price is the total price of a line (all pieces), price_currency USD, CHF or EUR (default: user preference).
@@ -72,6 +75,7 @@ class AurumServer extends Server
         SetProductImageTool::class,
         AddProductMediaTool::class,
         SetProductTextsTool::class,
+        RemoveProductMediaTool::class,
     ];
 
     protected array $resources = [];

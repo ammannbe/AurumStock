@@ -76,6 +76,8 @@ it('stores the chosen permissions on approval and issues a code', function () {
     $this->actingAs($user)->get(route('passport.authorizations.authorize', mcpAuthorizeQuery(mcpClient())))
         ->assertOk()
         ->assertSee('value="receipts"', false)
+        ->assertSee('value="replace_media"', false)
+        ->assertDontSee('value="replace_media" checked', false)
         ->assertSee('localhost')
         ->assertSee(route('mcp.authorize.approve'), false);
 

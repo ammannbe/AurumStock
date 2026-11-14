@@ -157,7 +157,7 @@ AurumStock exposes an [MCP](https://modelcontextprotocol.io/) server for importi
 
 - Endpoint: `https://<host>/mcp/aurum` (Streamable HTTP, rate limited to 60 requests per minute)
 - Auth: OAuth 2 with [Laravel Passport](https://laravel.com/docs/passport). AI clients register themselves (dynamic client registration), the user signs in and ticks the permissions on the approval screen. Permissions are stored per client in `mcp_grants` and can be changed or revoked in the app under **Connected AI clients**, which also shows how to connect each client.
-- Permissions: `read` (orders, products, suppliers, depositories), `create` (orders, products, suppliers), `receipts` (attach receipts), `images` (add missing front/back images, additional images/videos and missing inscriptions to products; existing media and texts are never replaced or removed). Tools without permission are neither listed nor callable.
+- Permissions: `read` (orders, products, suppliers, depositories), `create` (orders, products, suppliers), `receipts` (attach receipts), `images` (add missing front/back images, additional images/videos and missing inscriptions to products; existing media and texts are never replaced or removed), `replace_media` (replace images and inscriptions with `replace=true`, remove additional media). Tools without permission are neither listed nor callable.
 
 Example (Claude Code):
 
@@ -178,6 +178,9 @@ Tools (all scoped to the signed-in user):
 | `set-product-image` | images | Add the front (image side) or back (value side) image to a product without one: `image_url` (public https only, downloaded by the server with SSRF protection) or base64, max 10 MB |
 | `add-product-media` | images | Append an image or video to the additional media (`media_url` up to 40 MB or base64 up to 10 MB, optional label; identical files are skipped) |
 | `set-product-texts` | images | Set `text_front` / `text_back` (inscriptions) when empty |
+| `remove-product-media` | replace_media | Remove an additional media entry by filename (file deleted unless still referenced) |
+
+`set-product-image` and `set-product-texts` replace existing values only with `replace=true` and the `replace_media` permission; the old image file is deleted unless a template or another product still uses it.
 
 Deployment: after `php artisan migrate --force`, create the OAuth keys once with `php artisan passport:keys` (stored in `storage/oauth-*.key`, git-ignored, must persist across deployments) or set `PASSPORT_PRIVATE_KEY` / `PASSPORT_PUBLIC_KEY` in the environment.
 

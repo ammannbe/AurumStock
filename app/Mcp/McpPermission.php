@@ -12,6 +12,7 @@ enum McpPermission: string
     case Create = 'create';
     case Receipts = 'receipts';
     case Images = 'images';
+    case ReplaceMedia = 'replace_media';
 
     public function label(): string
     {
@@ -20,6 +21,7 @@ enum McpPermission: string
             McpPermission::Create => __('Create orders, products and suppliers'),
             McpPermission::Receipts => __('Attach receipts to orders'),
             McpPermission::Images => __('Add images, videos and missing inscriptions to products'),
+            McpPermission::ReplaceMedia => __('Replace and remove product images, media and inscriptions'),
         };
     }
 

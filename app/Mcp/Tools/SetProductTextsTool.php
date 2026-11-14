@@ -13,7 +13,7 @@ use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Attributes\Name;
 
 #[Name('set-product-texts')]
-#[Description('Set the inscriptions of one of the user\'s products: text_front (image side) and/or text_back (value side), e.g. "BRITANNIA 2024 · 1/4 oz · 999 FINE SILVER". Separate inscription parts with " · ". Only fills empty texts; an existing text is never changed.')]
+#[Description('Set the inscriptions of one of the user\'s products: text_front (image side) and/or text_back (value side), e.g. "BRITANNIA 2024 · 1/4 oz · 999 FINE SILVER". Separate inscription parts with " · ". Fills empty texts; replace=true replaces existing ones (needs the replace permission).')]
 class SetProductTextsTool extends AurumTool
 {
     /** @var array<string, string> */
@@ -35,6 +35,7 @@ class SetProductTextsTool extends AurumTool
             'product_id' => ['required', 'integer'],
             'text_front' => ['nullable', 'string', 'max:255', 'required_without:text_back'],
             'text_back' => ['nullable', 'string', 'max:255'],
+            'replace' => ['nullable', 'boolean'],
         ], [
             'text_front.required_without' => 'Pass text_front and/or text_back.',
         ]);
@@ -64,9 +65,13 @@ class SetProductTextsTool extends AurumTool
             }
 
             if ($current !== '') {
-                throw ValidationException::withMessages([
-                    $field => "Product #{$product->id} already has a {$label} text (\"{$current}\"); it can only be changed in the app.",
-                ]);
+                if (! ($data['replace'] ?? false)) {
+                    throw ValidationException::withMessages([
+                        $field => "Product #{$product->id} already has a {$label} text (\"{$current}\"); pass replace=true to replace it.",
+                    ]);
+                }
+
+                $this->ensureMayReplace($request, $field, "Product #{$product->id} already has a {$label} text.");
             }
 
             $changes[$field] = $value;
@@ -95,6 +100,7 @@ class SetProductTextsTool extends AurumTool
             'product_id' => $schema->integer()->required(),
             'text_front' => $schema->string()->description('Inscription of the image side (obverse), max 255 characters.'),
             'text_back' => $schema->string()->description('Inscription of the value side (reverse), max 255 characters.'),
+            'replace' => $schema->boolean()->description('Replace existing texts (needs the replace permission). Default false.'),
         ];
     }
 }

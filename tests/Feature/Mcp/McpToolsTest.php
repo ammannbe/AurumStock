@@ -15,6 +15,7 @@ use App\Mcp\Tools\GetOrderTool;
 use App\Mcp\Tools\ListDepositoriesTool;
 use App\Mcp\Tools\ListOrdersTool;
 use App\Mcp\Tools\ListSuppliersTool;
+use App\Mcp\Tools\RemoveProductMediaTool;
 use App\Mcp\Tools\SearchProductsTool;
 use App\Mcp\Tools\SearchProductTemplatesTool;
 use App\Mcp\Tools\SetProductImageTool;
@@ -606,4 +607,97 @@ it('needs the images permission for media and inscriptions', function () {
 
     expect($product->refresh()->text_front)->toBeNull()
         ->and($product->assets)->toBeNull();
+});
+
+it('replaces a product image only with replace=true and the replace permission', function () {
+    Storage::fake('public');
+    Storage::disk('public')->put('products/old.png', 'old');
+    Storage::disk('public')->put('product-templates/shared.png', 'shared');
+    ProductTemplate::factory()->create(['back_image_path' => 'product-templates/shared.png']);
+    $product = Product::factory()->create([
+        'user_id' => $this->user->id, 'depository_id' => $this->depository->id,
+        'front_image_path' => 'products/old.png', 'back_image_path' => 'product-templates/shared.png',
+    ]);
+    $png = base64_encode(pngBytes());
+
+    mcpConnect($this->user, [McpPermission::Read, McpPermission::Images]);
+
+    AurumServer::tool(SetProductImageTool::class, [
+        'product_id' => $product->id, 'side' => 'front', 'replace' => true, 'filename' => 'n.png', 'content_base64' => $png,
+    ])->assertHasErrors(['no permission to replace or remove']);
+
+    expect($product->refresh()->front_image_path)->toBe('products/old.png');
+
+    mcpConnect($this->user, [McpPermission::Read, McpPermission::Images, McpPermission::ReplaceMedia]);
+
+    AurumServer::tool(SetProductImageTool::class, [
+        'product_id' => $product->id, 'side' => 'front', 'replace' => true, 'filename' => 'n.png', 'content_base64' => $png,
+    ])->assertOk();
+
+    AurumServer::tool(SetProductImageTool::class, [
+        'product_id' => $product->id, 'side' => 'back', 'replace' => true, 'filename' => 'n.png', 'content_base64' => $png,
+    ])->assertOk();
+
+    $product->refresh();
+    expect($product->front_image_path)->not->toBe('products/old.png')
+        ->and($product->back_image_path)->not->toBe('product-templates/shared.png');
+
+    Storage::disk('public')->assertMissing('products/old.png');
+    Storage::disk('public')->assertExists(['product-templates/shared.png', (string) $product->front_image_path, (string) $product->back_image_path]);
+});
+
+it('replaces product inscriptions only with replace=true and the replace permission', function () {
+    $product = Product::factory()->create(['user_id' => $this->user->id, 'depository_id' => $this->depository->id, 'text_front' => 'ALT']);
+
+    mcpConnect($this->user, [McpPermission::Images]);
+    AurumServer::tool(SetProductTextsTool::class, ['product_id' => $product->id, 'text_front' => 'NEU', 'replace' => true])
+        ->assertHasErrors(['no permission to replace or remove']);
+    expect($product->refresh()->text_front)->toBe('ALT');
+
+    mcpConnect($this->user, [McpPermission::Images, McpPermission::ReplaceMedia]);
+    AurumServer::tool(SetProductTextsTool::class, ['product_id' => $product->id, 'text_front' => 'NEU'])
+        ->assertHasErrors(['pass replace=true']);
+    AurumServer::tool(SetProductTextsTool::class, ['product_id' => $product->id, 'text_front' => 'NEU', 'replace' => true])
+        ->assertOk()->assertStructuredContentPath('set', ['text_front']);
+
+    expect($product->refresh()->text_front)->toBe('NEU');
+});
+
+it('removes additional media and keeps files that are still used elsewhere', function () {
+    Storage::fake('public');
+    Storage::disk('public')->put('products/media/a.jpg', 'a');
+    Storage::disk('public')->put('products/media/shared.jpg', 'shared');
+    Product::factory()->create(['user_id' => $this->other->id, 'depository_id' => $this->otherDepository->id, 'assets' => [['path' => 'products/media/shared.jpg', 'label' => null]]]);
+    $product = Product::factory()->create(['user_id' => $this->user->id, 'depository_id' => $this->depository->id, 'assets' => [
+        ['path' => 'products/media/a.jpg', 'label' => 'Rand'],
+        ['path' => 'products/media/shared.jpg', 'label' => 'Box'],
+    ]]);
+
+    AurumServer::tool(SearchProductsTool::class, ['search' => $product->name])
+        ->assertOk()->assertStructuredContentPath('products.0.media.0', ['label' => 'Rand', 'filename' => 'a.jpg']);
+
+    AurumServer::tool(RemoveProductMediaTool::class, ['product_id' => $product->id, 'filename' => 'a.jpg'])
+        ->assertOk()->assertStructuredContentPath('removed.file_deleted', true);
+    AurumServer::tool(RemoveProductMediaTool::class, ['product_id' => $product->id, 'filename' => 'shared.jpg'])
+        ->assertOk()->assertStructuredContentPath('removed.file_deleted', false);
+    AurumServer::tool(RemoveProductMediaTool::class, ['product_id' => $product->id, 'filename' => 'a.jpg'])
+        ->assertHasErrors(['has no additional media named a.jpg']);
+
+    expect($product->refresh()->assets)->toBeNull();
+    Storage::disk('public')->assertMissing('products/media/a.jpg');
+    Storage::disk('public')->assertExists('products/media/shared.jpg');
+});
+
+it('cannot remove media without the replace permission or from foreign products', function () {
+    $foreign = Product::factory()->create(['user_id' => $this->other->id, 'depository_id' => $this->otherDepository->id, 'assets' => [['path' => 'products/media/x.jpg', 'label' => null]]]);
+    $product = Product::factory()->create(['user_id' => $this->user->id, 'depository_id' => $this->depository->id, 'assets' => [['path' => 'products/media/y.jpg', 'label' => null]]]);
+
+    AurumServer::tool(RemoveProductMediaTool::class, ['product_id' => $foreign->id, 'filename' => 'x.jpg'])
+        ->assertHasErrors(["Product #{$foreign->id} not found."]);
+
+    mcpConnect($this->user, [McpPermission::Read, McpPermission::Create, McpPermission::Receipts, McpPermission::Images]);
+    AurumServer::tool(RemoveProductMediaTool::class, ['product_id' => $product->id, 'filename' => 'y.jpg'])->assertHasErrors();
+
+    expect($foreign->refresh()->assets)->toHaveCount(1)
+        ->and($product->refresh()->assets)->toHaveCount(1);
 });

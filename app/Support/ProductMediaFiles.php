@@ -67,6 +67,19 @@ class ProductMediaFiles
     }
 
     /**
+     * Deletes a single file unless a product or template still references it (call after saving
+     * the record that dropped the path).
+     */
+    public static function deleteIfUnreferenced(?string $path): bool
+    {
+        if (! is_string($path) || $path === '' || in_array($path, self::referencedPaths(), true)) {
+            return false;
+        }
+
+        return Storage::disk(self::DISK)->delete($path);
+    }
+
+    /**
      * All referenced paths, optionally ignoring the record being deleted.
      *
      * @return array<int, string>

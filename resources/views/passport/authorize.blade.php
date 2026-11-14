@@ -42,7 +42,7 @@
                     {{ $permission->label() }}
                 </label>
             @endforeach
-            <p class="text-xs leading-5 text-zinc-500 dark:text-zinc-400">{{ __('Only your own data. The client cannot change or delete existing records.') }}</p>
+            <p class="text-xs leading-5 text-zinc-500 dark:text-zinc-400">{{ __('Only your own data. The client cannot change or delete existing records, except images, media and inscriptions with the matching permission.') }}</p>
             @error('permissions')
                 <p class="text-xs font-medium text-red-600">{{ $message }}</p>
             @enderror
