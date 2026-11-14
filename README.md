@@ -175,7 +175,7 @@ Tools (all scoped to the signed-in user):
 | `create-order` | create | Order with supplier and product line items, atomic, supports `dry_run` |
 | `create-product` | create | Single product, optionally linked to an order, supports `dry_run` |
 | `attach-order-receipt` | receipts | Attach a PDF/image receipt (base64, max 10 MB) to an order |
-| `set-product-image` | images | Add the front (image side) or back (value side) image (base64, max 10 MB) to a product without one |
+| `set-product-image` | images | Add the front (image side) or back (value side) image to a product without one: `image_url` (public https only, downloaded by the server with SSRF protection) or base64, max 10 MB |
 
 Deployment: after `php artisan migrate --force`, create the OAuth keys once with `php artisan passport:keys` (stored in `storage/oauth-*.key`, git-ignored, must persist across deployments) or set `PASSPORT_PRIVATE_KEY` / `PASSPORT_PUBLIC_KEY` in the environment.
 

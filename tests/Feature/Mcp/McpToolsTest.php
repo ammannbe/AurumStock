@@ -5,6 +5,7 @@ use App\Enums\ProductType;
 use App\Enums\WeightUnit;
 use App\Mcp\McpPermission;
 use App\Mcp\Servers\AurumServer;
+use App\Mcp\Support\RemoteFileFetcher;
 use App\Mcp\Tools\AttachOrderReceiptTool;
 use App\Mcp\Tools\CreateOrderTool;
 use App\Mcp\Tools\CreateProductTool;
@@ -22,6 +23,7 @@ use App\Models\Product;
 use App\Models\ProductTemplate;
 use App\Models\Supplier;
 use App\Models\User;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 
 beforeEach(function () {
@@ -404,6 +406,95 @@ it('rejects invalid product images and needs the images permission', function ()
     AurumServer::tool(SetProductImageTool::class, [
         'product_id' => $product->id, 'side' => 'front', 'filename' => 'x.png', 'content_base64' => base64_encode(pngBytes()),
     ])->assertHasErrors();
+
+    expect($product->refresh()->front_image_path)->toBeNull()
+        ->and(Storage::disk('public')->allFiles())->toBe([]);
+});
+
+/**
+ * Lets RemoteFileFetcher resolve host names without DNS.
+ *
+ * @param  array<string, list<string>>  $hosts
+ */
+function fakeDns(array $hosts): void
+{
+    app()->instance(RemoteFileFetcher::class, new class($hosts) extends RemoteFileFetcher
+    {
+        /** @param  array<string, list<string>>  $hosts */
+        public function __construct(private array $hosts) {}
+
+        protected function resolve(string $host): array
+        {
+            return $this->hosts[$host] ?? [];
+        }
+    });
+}
+
+it('downloads a product image from a public https url', function () {
+    Storage::fake('public');
+    fakeDns(['cdn.example.com' => ['93.184.216.34'], 'img.example.com' => ['93.184.216.35']]);
+    Http::preventStrayRequests();
+    Http::fake([
+        'https://cdn.example.com/coin' => Http::response('', 302, ['Location' => 'https://img.example.com/coin.php']),
+        'https://img.example.com/coin.php' => Http::response(pngBytes(), 200, ['Content-Type' => 'image/png']),
+    ]);
+    $product = Product::factory()->create(['user_id' => $this->user->id, 'depository_id' => $this->depository->id, 'front_image_path' => null]);
+
+    AurumServer::tool(SetProductImageTool::class, [
+        'product_id' => $product->id, 'side' => 'front', 'image_url' => 'https://cdn.example.com/coin',
+    ])->assertOk()->assertStructuredContentPath('image.mime_type', 'image/png');
+
+    expect($product->refresh()->front_image_path)->toStartWith('products/')->toEndWith('.png');
+    Storage::disk('public')->assertExists((string) $product->front_image_path);
+});
+
+it('refuses image urls that are not public https', function (string $url, string $error) {
+    Storage::fake('public');
+    fakeDns([
+        'intranet.example.com' => ['10.0.0.5'],
+        'mixed.example.com' => ['93.184.216.34', '127.0.0.1'],
+        'cdn.example.com' => ['93.184.216.34'],
+    ]);
+    Http::preventStrayRequests();
+    Http::fake(['https://cdn.example.com/*' => Http::response('', 301, ['Location' => 'https://intranet.example.com/secret.png'])]);
+    $product = Product::factory()->create(['user_id' => $this->user->id, 'depository_id' => $this->depository->id, 'front_image_path' => null]);
+
+    AurumServer::tool(SetProductImageTool::class, [
+        'product_id' => $product->id, 'side' => 'front', 'image_url' => $url,
+    ])->assertHasErrors([$error]);
+
+    expect($product->refresh()->front_image_path)->toBeNull()
+        ->and(Storage::disk('public')->allFiles())->toBe([]);
+})->with([
+    'http' => ['http://cdn.example.com/a.png', 'Only public https:// URLs'],
+    'other port' => ['https://cdn.example.com:8443/a.png', 'Only public https:// URLs'],
+    'credentials' => ['https://user:pw@cdn.example.com/a.png', 'Only public https:// URLs'],
+    'private ip' => ['https://10.0.0.1/a.png', 'must point to a public host'],
+    'loopback v6' => ['https://[::1]/a.png', 'must point to a public host'],
+    'private host' => ['https://intranet.example.com/a.png', 'must point to a public host'],
+    'partly private host' => ['https://mixed.example.com/a.png', 'must point to a public host'],
+    'unknown host' => ['https://nowhere.example.com/a.png', 'must point to a public host'],
+    'redirect to private host' => ['https://cdn.example.com/a.png', 'must point to a public host'],
+]);
+
+it('rejects downloads that are no image, too large or failed', function () {
+    Storage::fake('public');
+    fakeDns(['cdn.example.com' => ['93.184.216.34']]);
+    Http::preventStrayRequests();
+    Http::fake([
+        'https://cdn.example.com/page.png' => Http::response('<html>no image</html>', 200, ['Content-Type' => 'image/png']),
+        'https://cdn.example.com/huge.png' => Http::response('x', 200, ['Content-Length' => (string) (SetProductImageTool::MAX_BYTES + 1)]),
+        'https://cdn.example.com/missing.png' => Http::response('', 404),
+    ]);
+    $product = Product::factory()->create(['user_id' => $this->user->id, 'depository_id' => $this->depository->id, 'front_image_path' => null]);
+
+    $call = fn (array $args) => AurumServer::tool(SetProductImageTool::class, ['product_id' => $product->id, 'side' => 'front', ...$args]);
+
+    $call(['image_url' => 'https://cdn.example.com/page.png'])->assertHasErrors(['is not a supported image']);
+    $call(['image_url' => 'https://cdn.example.com/huge.png'])->assertHasErrors(['must not be larger than 10 MB']);
+    $call(['image_url' => 'https://cdn.example.com/missing.png'])->assertHasErrors(['HTTP status 404']);
+    $call([])->assertHasErrors(['Pass either image_url or content_base64.']);
+    $call(['image_url' => 'https://cdn.example.com/page.png', 'content_base64' => base64_encode(pngBytes()), 'filename' => 'a.png'])->assertHasErrors(['not both']);
 
     expect($product->refresh()->front_image_path)->toBeNull()
         ->and(Storage::disk('public')->allFiles())->toBe([]);
